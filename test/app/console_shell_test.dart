@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waternode/app/app.dart';
 import 'package:waternode/app/dependencies/app_dependencies.dart';
@@ -52,5 +53,24 @@ void main() {
 
     expect(find.text('登录授权'), findsOneWidget);
     expect(find.text('获取验证码'), findsOneWidget);
+  });
+
+  testWidgets('shows tooltips for collapsed sidebar items on wide layout', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      WaterNodeApp(dependencies: AppDependencies.inMemory()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('设备中心'), findsNothing);
+    expect(find.byTooltip('首页概览'), findsOneWidget);
+    expect(find.byTooltip('终端大厅'), findsOneWidget);
+    expect(find.byTooltip('凭证管理'), findsOneWidget);
+    expect(find.byTooltip('登录授权'), findsOneWidget);
   });
 }

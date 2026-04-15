@@ -309,56 +309,64 @@ class _SidebarItem extends StatelessWidget {
     final backgroundColor = isActive
         ? selectedColor.withValues(alpha: 0.12)
         : Colors.transparent;
+    final content = Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isExpanded ? 14 : 10,
+            vertical: 12,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                item.icon,
+                color: isActive
+                    ? selectedColor
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              if (isExpanded) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: isActive ? selectedColor : null,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isExpanded ? 14 : 10,
-              vertical: 12,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  item.icon,
-                  color: isActive
-                      ? selectedColor
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                if (isExpanded) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: isActive ? selectedColor : null,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.subtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+      child: Semantics(
+        label: item.title,
+        button: true,
+        selected: isActive,
+        child: isExpanded
+            ? content
+            : Tooltip(message: item.title, child: content),
       ),
     );
   }
