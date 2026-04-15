@@ -13,13 +13,23 @@ class CredentialPage extends GetView<CredentialController> {
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: () => Get.offNamed<dynamic>(AppRoutes.auth),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('新增登录凭证'),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: controller.isRefreshing.value
+                    ? null
+                    : () => controller.refreshStatuses(),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('刷新积分'),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: () => Get.offNamed<dynamic>(AppRoutes.auth),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('新增登录凭证'),
+              ),
+            ],
           ),
           if (controller.lastError.value != null) ...[
             const SizedBox(height: 12),

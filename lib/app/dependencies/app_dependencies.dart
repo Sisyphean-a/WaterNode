@@ -107,8 +107,11 @@ class _StubActivityGateway implements ActivityGateway {
   const _StubActivityGateway();
 
   @override
-  Future<AccountStatus> fetchStatus(AccountCredential credential) {
-    throw UnimplementedError('测试依赖未提供 ActivityGateway');
+  Future<AccountStatus> fetchStatus(AccountCredential credential) async {
+    return AccountStatus(
+      isValid: credential.isValid,
+      points: credential.points,
+    );
   }
 
   @override

@@ -52,7 +52,7 @@ class DeviceController extends GetxController {
     isLoading.value = true;
     lastError.value = null;
     try {
-      await _credentialController.load();
+      await _credentialController.refreshStatuses();
       final credential = _findQueryCredential();
       final config = await _deviceGateway.getFreeWaterConfig(credential);
       if (!config.isOn) {
@@ -75,6 +75,7 @@ class DeviceController extends GetxController {
   }
 
   Future<void> sendCommand(DeviceStation station) async {
+    await _credentialController.refreshStatuses();
     final credential = _findDispatchCredential();
     final config =
         freeWaterConfig.value ??

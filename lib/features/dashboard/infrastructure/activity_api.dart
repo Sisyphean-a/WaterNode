@@ -14,19 +14,23 @@ class ActivityApi implements ActivityGateway {
   @override
   Future<AccountStatus> fetchStatus(AccountCredential credential) async {
     final response = await _client.get(
-      '/ids/app/user/findUserInfo',
-      headers: _headerFactory.buildAuthorizedHeaders(token: credential.token),
+      '/pay/account/coin/user',
+      headers: _buildBalanceHeaders(credential),
+      queryParameters: <String, dynamic>{
+        'accountType': 'COIN',
+        'userId': credential.userId,
+      },
     );
     final code = response['code'] as String?;
     if (code == 'h009') {
       return const AccountStatus(isValid: false, points: 0);
     }
     if (code != '200') {
-      throw AppException('findUserInfo returned unexpected code: $code');
+      throw AppException('coin/user returned unexpected code: $code');
     }
     final data =
         response['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    return AccountStatus(isValid: true, points: _readPoints(data));
+    return AccountStatus(isValid: true, points: _readBalance(data));
   }
 
   @override
@@ -57,19 +61,33 @@ class ActivityApi implements ActivityGateway {
     _ensureSuccess(response, 'luckDraw');
   }
 
-  int _readPoints(Map<String, dynamic> data) {
-    for (final key in const ['activePoint', 'activePoints', 'points']) {
-      final value = data[key];
-      if (value is int) {
-        return value;
-      }
-      if (value is String) {
-        return int.parse(value);
-      }
-    }
-    throw const AppException(
-      'Unable to read points field from userInfo payload',
+  Map<String, String> _buildBalanceHeaders(AccountCredential credential) {
+    final headers = _headerFactory.buildAuthorizedHeaders(
+      token: credential.token,
+      includeUserId: true,
     );
+    if (credential.platformType == 'APPLETS') {
+      return <String, String>{
+        ...headers,
+        'xweb_xhr': '1',
+        'Content-Type': 'application/json',
+      };
+    }
+    return headers;
+  }
+
+  int _readBalance(Map<String, dynamic> data) {
+    final value = data['totalFee'];
+    if (value is int) {
+      return value;
+    }
+    if (value is double) {
+      return value.toInt();
+    }
+    if (value is String && value.isNotEmpty) {
+      return double.parse(value).toInt();
+    }
+    throw const AppException('Unable to read totalFee from coin/user payload');
   }
 
   void _ensureSuccess(Map<String, dynamic> response, String action) {

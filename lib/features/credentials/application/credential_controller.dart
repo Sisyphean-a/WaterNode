@@ -12,6 +12,7 @@ class CredentialController extends GetxController {
   final credentials = <AccountCredential>[].obs;
   final isRefreshing = false.obs;
   final lastError = RxnString();
+  Future<void>? _refreshTask;
 
   int get totalCount => credentials.length;
   int get validCount => credentials.where((item) => item.isValid).length;
@@ -21,7 +22,7 @@ class CredentialController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    load();
+    _bootstrap();
   }
 
   Future<void> load() async {
@@ -29,10 +30,36 @@ class CredentialController extends GetxController {
   }
 
   Future<void> refreshStatuses() async {
+    final activeTask = _refreshTask;
+    if (activeTask != null) {
+      return activeTask;
+    }
+    final task = _performRefreshStatuses();
+    _refreshTask = task;
+    await task.whenComplete(() {
+      _refreshTask = null;
+    });
+  }
+
+  Future<void> _bootstrap() async {
+    await load();
+    if (credentials.isEmpty) {
+      return;
+    }
+    try {
+      await refreshStatuses();
+    } catch (_) {}
+  }
+
+  Future<void> _performRefreshStatuses() async {
     isRefreshing.value = true;
     lastError.value = null;
     try {
       final current = await _repository.readAll();
+      if (current.isEmpty) {
+        credentials.clear();
+        return;
+      }
       final updated = <AccountCredential>[];
       for (final credential in current) {
         final status = await _activityGateway.fetchStatus(credential);

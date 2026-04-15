@@ -32,7 +32,10 @@ class AppBinding extends Bindings {
         _dependencies.authGateway,
         _dependencies.accountRepository,
         _dependencies.tokenPayloadParser,
-        onCredentialSaved: Get.find<CredentialController>().load,
+        onCredentialSaved: () async {
+          await Get.find<CredentialController>().load();
+          await Get.find<CredentialController>().refreshStatuses();
+        },
       ),
       permanent: true,
     );

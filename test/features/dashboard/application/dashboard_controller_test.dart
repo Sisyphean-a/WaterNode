@@ -46,6 +46,30 @@ void main() {
     expect(controller.logs, hasLength(1));
     expect(controller.logs.single.message, contains('签到成功'));
   });
+
+  test('refreshes statuses before batch sign-in', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-1',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 0,
+        isValid: false,
+      ),
+    );
+    final gateway = _RefreshingDashboardGateway();
+    final credentialController = CredentialController(repository, gateway);
+    await credentialController.load();
+    final controller = DashboardController(credentialController, gateway);
+
+    await controller.runBatchSignIn();
+
+    expect(gateway.signInCalls, 1);
+    expect(controller.logs.single.message, contains('签到成功'));
+  });
 }
 
 class _DashboardGateway implements ActivityGateway {
@@ -65,4 +89,24 @@ class _DashboardGateway implements ActivityGateway {
 
   @override
   Future<void> signIn(AccountCredential credential) async {}
+}
+
+class _RefreshingDashboardGateway implements ActivityGateway {
+  int signInCalls = 0;
+
+  @override
+  Future<AccountStatus> fetchStatus(AccountCredential credential) async {
+    return const AccountStatus(isValid: true, points: 12);
+  }
+
+  @override
+  Future<void> luckDraw(
+    AccountCredential credential, {
+    required String townCode,
+  }) async {}
+
+  @override
+  Future<void> signIn(AccountCredential credential) async {
+    signInCalls++;
+  }
 }

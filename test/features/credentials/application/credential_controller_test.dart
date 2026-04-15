@@ -6,6 +6,28 @@ import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.da
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 
 void main() {
+  test('loads and refreshes credential status on init', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 0,
+        isValid: true,
+      ),
+    );
+    final controller = CredentialController(repository, _FakeActivityGateway());
+
+    controller.onInit();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.credentials.single.points, 88);
+    expect(controller.credentials.single.isValid, true);
+  });
+
   test('refreshes credential status and points', () async {
     final repository = MemoryAccountRepository();
     await repository.save(

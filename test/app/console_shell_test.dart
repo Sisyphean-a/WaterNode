@@ -46,6 +46,7 @@ void main() {
 
     expect(find.text('凭证管理'), findsOneWidget);
     expect(find.text('新增登录凭证'), findsOneWidget);
+    expect(find.text('刷新积分'), findsOneWidget);
 
     await tester.tap(find.byTooltip('展开导航'));
     await tester.pumpAndSettle();

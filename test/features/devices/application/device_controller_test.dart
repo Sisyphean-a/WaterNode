@@ -100,6 +100,34 @@ void main() {
     },
   );
 
+  test('refreshes account balance before dispatching water', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-query',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-query',
+        userId: 'user-query',
+        points: 0,
+        isValid: true,
+      ),
+    );
+    final credentialController = CredentialController(
+      repository,
+      _RefreshingActivityGateway(),
+    );
+    await credentialController.load();
+    final gateway = _RecordingDeviceGateway();
+    final controller = DeviceController(credentialController, gateway);
+    await controller.loadStations();
+
+    await controller.sendCommand(controller.stations.single);
+
+    expect(gateway.dispenseCredentialMobile, '15700000000');
+    expect(controller.logs.first, contains('15700000000'));
+  });
+
   test(
     'logs explicit failure when no valid account can load device list',
     () async {
@@ -138,6 +166,22 @@ class _IdleActivityGateway implements ActivityGateway {
       isValid: credential.isValid,
       points: credential.points,
     );
+  }
+
+  @override
+  Future<void> luckDraw(
+    AccountCredential credential, {
+    required String townCode,
+  }) async {}
+
+  @override
+  Future<void> signIn(AccountCredential credential) async {}
+}
+
+class _RefreshingActivityGateway implements ActivityGateway {
+  @override
+  Future<AccountStatus> fetchStatus(AccountCredential credential) async {
+    return const AccountStatus(isValid: true, points: 5);
   }
 
   @override

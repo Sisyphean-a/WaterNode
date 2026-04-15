@@ -47,6 +47,7 @@ class DashboardController extends GetxController {
     required String actionName,
     required Future<void> Function(AccountCredential credential) runner,
   }) async {
+    await _credentialController.refreshStatuses();
     final targets = _credentialController.credentials
         .where((item) => item.isValid)
         .toList(growable: false);
