@@ -4,6 +4,7 @@ import 'package:waternode/app/routes/app_routes.dart';
 import 'package:waternode/features/auth/presentation/pages/auth_page.dart';
 import 'package:waternode/features/credentials/presentation/pages/credential_page.dart';
 import 'package:waternode/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:waternode/features/dashboard/presentation/pages/task_center_page.dart';
 import 'package:waternode/features/devices/presentation/pages/device_station_page.dart';
 
 class ConsoleShellPage extends StatefulWidget {
@@ -104,6 +105,7 @@ class _ConsoleShellPageState extends State<ConsoleShellPage> {
   Widget _buildContent() {
     return switch (widget.activeRoute) {
       AppRoutes.dashboard => const DashboardPage(),
+      AppRoutes.tasks => const TaskCenterPage(),
       AppRoutes.devices => const DeviceStationPage(),
       AppRoutes.credentials => const CredentialPage(),
       AppRoutes.auth => const AuthPage(),
@@ -384,6 +386,19 @@ class _ConsoleNavigationCatalog {
           subtitle: '查看统计与取水入口',
           groupTitle: '总览中心',
           icon: Icons.dashboard_customize_rounded,
+        ),
+      ],
+    ),
+    _ConsoleNavigationGroup(
+      title: '任务中心',
+      items: <_ConsoleNavigationItem>[
+        _ConsoleNavigationItem(
+          route: AppRoutes.tasks,
+          title: '批量任务',
+          headerTitle: '批量任务',
+          subtitle: '执行打卡与积分抽取',
+          groupTitle: '任务中心',
+          icon: Icons.task_alt_rounded,
         ),
       ],
     ),

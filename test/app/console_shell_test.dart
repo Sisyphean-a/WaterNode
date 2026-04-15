@@ -55,6 +55,27 @@ void main() {
     expect(find.text('获取验证码'), findsOneWidget);
   });
 
+  testWidgets('moves batch actions into sidebar task page', (tester) async {
+    await tester.pumpWidget(
+      WaterNodeApp(dependencies: AppDependencies.inMemory()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('执行批量打卡'), findsNothing);
+    expect(find.text('执行批量积分抽取'), findsNothing);
+
+    await tester.tap(find.byTooltip('展开导航'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('任务中心'), findsOneWidget);
+    await tester.tap(find.text('批量任务'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('批量任务'), findsWidgets);
+    expect(find.text('执行批量打卡'), findsOneWidget);
+    expect(find.text('执行批量积分抽取'), findsOneWidget);
+  });
+
   testWidgets('shows tooltips for collapsed sidebar items on wide layout', (
     tester,
   ) async {

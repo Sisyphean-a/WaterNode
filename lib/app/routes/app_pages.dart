@@ -9,6 +9,10 @@ abstract final class AppPages {
       page: () => const ConsoleShellPage(activeRoute: AppRoutes.dashboard),
     ),
     GetPage<dynamic>(
+      name: AppRoutes.tasks,
+      page: () => const ConsoleShellPage(activeRoute: AppRoutes.tasks),
+    ),
+    GetPage<dynamic>(
       name: AppRoutes.devices,
       page: () => const ConsoleShellPage(activeRoute: AppRoutes.devices),
     ),
