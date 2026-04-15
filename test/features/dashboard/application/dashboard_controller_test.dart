@@ -49,7 +49,33 @@ void main() {
     expect(controller.logs.single.message, contains('签到成功'));
   });
 
-  test('refreshes statuses before batch sign-in', () async {
+  test('skips already-signed accounts during batch sign-in', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-1',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 0,
+        isValid: true,
+      ),
+    );
+    final gateway = _AlreadySignedDashboardGateway();
+    final credentialController = CredentialController(repository, gateway);
+    await credentialController.load();
+    final controller = DashboardController(credentialController, gateway);
+
+    await controller.runBatchSignIn();
+
+    expect(gateway.signInCalls, 0);
+    expect(gateway.fetchStatusCalls, 1);
+    expect(controller.logs.single.message, contains('今日已签到'));
+    expect(controller.logs.single.message, contains('跳过'));
+  });
+
+  test('refreshes statuses again after batch sign-in', () async {
     final repository = MemoryAccountRepository();
     await repository.save(
       const AccountCredential(
@@ -70,7 +96,13 @@ void main() {
     await controller.runBatchSignIn();
 
     expect(gateway.signInCalls, 1);
+    expect(gateway.fetchStatusCalls, 2);
     expect(controller.logs.single.message, contains('签到成功'));
+    expect(controller.totalPoints, 18);
+    expect(
+      credentialController.credentials.single.signInState,
+      AccountSignInState.completed,
+    );
   });
 }
 
@@ -100,14 +132,54 @@ class _DashboardGateway implements ActivityGateway {
 }
 
 class _RefreshingDashboardGateway implements ActivityGateway {
+  int fetchStatusCalls = 0;
   int signInCalls = 0;
 
   @override
   Future<AccountStatus> fetchStatus(AccountCredential credential) async {
+    fetchStatusCalls++;
+    if (signInCalls == 0) {
+      return const AccountStatus(
+        isValid: true,
+        points: 12,
+        signInState: AccountSignInState.available,
+      );
+    }
+    return const AccountStatus(
+      isValid: true,
+      points: 18,
+      signInState: AccountSignInState.completed,
+    );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
+  }
+
+  @override
+  Future<void> luckDraw(
+    AccountCredential credential, {
+    required String townCode,
+  }) async {}
+
+  @override
+  Future<void> signIn(AccountCredential credential) async {
+    signInCalls++;
+  }
+}
+
+class _AlreadySignedDashboardGateway implements ActivityGateway {
+  int fetchStatusCalls = 0;
+  int signInCalls = 0;
+
+  @override
+  Future<AccountStatus> fetchStatus(AccountCredential credential) async {
+    fetchStatusCalls++;
     return const AccountStatus(
       isValid: true,
       points: 12,
-      signInState: AccountSignInState.unknown,
+      signInState: AccountSignInState.completed,
     );
   }
 

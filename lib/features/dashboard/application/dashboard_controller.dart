@@ -67,10 +67,14 @@ class DashboardController extends GetxController {
         .where((item) => item.isValid)
         .toList(growable: false);
     final tasks = <Future<void>>[];
-    for (var index = 0; index < targets.length; index++) {
-      final credential = targets[index];
+    var executedCount = 0;
+    for (final credential in targets) {
+      if (_shouldSkipBatchAction(actionName, credential)) {
+        addLog('${credential.mobile} 今日已签到，跳过');
+        continue;
+      }
       tasks.add(
-        Future<void>.delayed(batchDelay * index, () async {
+        Future<void>.delayed(batchDelay * executedCount, () async {
           try {
             await runner(credential);
             if (actionName == '签到') {
@@ -91,9 +95,14 @@ class DashboardController extends GetxController {
           }
         }),
       );
+      executedCount++;
     }
     await Future.wait(tasks);
-    await _credentialController.load();
+    if (actionName == '签到' && executedCount > 0) {
+      await _credentialController.refreshStatuses();
+    } else {
+      await _credentialController.load();
+    }
     await loadBills().catchError((_) {});
   }
 
@@ -146,5 +155,12 @@ class DashboardController extends GetxController {
       return sorted.firstWhereOrNull((item) => item.mobile == selected);
     }
     return sorted.firstOrNull;
+  }
+
+  bool _shouldSkipBatchAction(String actionName, AccountCredential credential) {
+    if (actionName != '签到') {
+      return false;
+    }
+    return credential.signInState == AccountSignInState.completed;
   }
 }
