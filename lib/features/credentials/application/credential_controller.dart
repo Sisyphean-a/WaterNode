@@ -4,6 +4,8 @@ import 'package:waternode/features/credentials/domain/models/account_credential.
 import 'package:waternode/features/credentials/domain/repositories/account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
 
+const Object _noChange = Object();
+
 class CredentialController extends GetxController {
   CredentialController(this._repository, this._activityGateway);
 
@@ -85,8 +87,8 @@ class CredentialController extends GetxController {
 
   Future<void> updateAccountMeta(
     AccountCredential credential, {
-    String? remark,
-    String? defaultRegionCode,
+    Object? remark = _noChange,
+    Object? defaultRegionCode = _noChange,
     AccountSignInState? signInState,
   }) async {
     final updated = credential.copyWith(

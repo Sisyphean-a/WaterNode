@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
+import 'package:waternode/features/dashboard/domain/models/task_log_entry.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
@@ -21,7 +22,7 @@ class DeviceController extends GetxController {
   final selectedCredential = Rxn<AccountCredential>();
   final freeWaterConfig = Rxn<FreeWaterConfig>();
   final stations = <DeviceStation>[].obs;
-  final logs = <String>[].obs;
+  final logs = <TaskLogEntry>[].obs;
   final isLoading = false.obs;
   final dispatchingStationId = RxnString();
   final lastError = RxnString();
@@ -140,21 +141,27 @@ class DeviceController extends GetxController {
         quantity: quantity,
         credential: credential,
       );
-      logs.insert(
-        0,
+      _addLog(
         '${credential.mobile} 对 ${detail.name} 取水成功 '
         '${_displayVolumeLabel(quantity, config)}',
       );
     } catch (error) {
       final message = error.toString();
+      final stationName = targetStation.name;
       if (message.contains('超出每日取水')) {
         final limitMessage = '当前账号当日取水额度已耗尽，可切换其他账号继续操作';
         lastError.value = limitMessage;
-        logs.insert(0, '${targetStation.name} 取水失败: $limitMessage');
+        _addLog(
+          '${credential.mobile} 对 $stationName 取水失败: $limitMessage',
+          isError: true,
+        );
         throw StateError(limitMessage);
       }
       lastError.value = message;
-      logs.insert(0, '${targetStation.name} 取水失败: $error');
+      _addLog(
+        '${credential.mobile} 对 $stationName 取水失败: $error',
+        isError: true,
+      );
       rethrow;
     } finally {
       dispatchingStationId.value = null;
@@ -206,5 +213,16 @@ class DeviceController extends GetxController {
       return '15L';
     }
     return '${config.waterVolume.toStringAsFixed(1)}L';
+  }
+
+  void _addLog(String message, {bool isError = false}) {
+    logs.insert(
+      0,
+      TaskLogEntry(
+        message: message,
+        createdAt: DateTime.now(),
+        isError: isError,
+      ),
+    );
   }
 }

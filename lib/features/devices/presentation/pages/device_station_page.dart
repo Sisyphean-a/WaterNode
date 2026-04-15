@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:waternode/app/presentation/widgets/workbench_section.dart';
+import 'package:waternode/features/dashboard/presentation/widgets/log_panel.dart';
 import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/models/region_option.dart';
 import 'package:waternode/features/devices/presentation/widgets/device_station_card.dart';
@@ -182,16 +183,7 @@ class _DeviceLogs extends StatelessWidget {
     return WorkbenchSection(
       title: '执行反馈',
       expandChild: true,
-      child: ListView(
-        children: [
-          for (final log in controller.logs)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(log),
-            ),
-          if (controller.logs.isEmpty) const Text('尚无取水执行记录'),
-        ],
-      ),
+      child: LogPanel(logs: controller.logs),
     );
   }
 }

@@ -88,6 +88,40 @@ void main() {
     expect(persisted.single.remark, '家里');
     expect(persisted.single.defaultRegionCode, 'default-page');
   });
+
+  test(
+    'clears persisted remark when account remark is submitted empty',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-1',
+          userId: 'user-1',
+          points: 0,
+          isValid: true,
+          remark: '家里',
+        ),
+      );
+      final controller = CredentialController(
+        repository,
+        _FakeActivityGateway(),
+      );
+
+      await controller.load();
+      await controller.updateAccountMeta(
+        controller.credentials.single,
+        remark: null,
+      );
+
+      expect(controller.credentials.single.remark, isNull);
+
+      final persisted = await repository.readAll();
+      expect(persisted.single.remark, isNull);
+    },
+  );
 }
 
 class _FakeActivityGateway implements ActivityGateway {

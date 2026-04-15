@@ -1,5 +1,7 @@
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 
+const Object _noChange = Object();
+
 class AccountCredential {
   const AccountCredential({
     required this.mobile,
@@ -35,10 +37,10 @@ class AccountCredential {
     String? userId,
     int? points,
     bool? isValid,
-    String? remark,
-    String? defaultRegionCode,
+    Object? remark = _noChange,
+    Object? defaultRegionCode = _noChange,
     AccountSignInState? signInState,
-    DateTime? lastCheckedAt,
+    Object? lastCheckedAt = _noChange,
   }) {
     return AccountCredential(
       mobile: mobile ?? this.mobile,
@@ -48,10 +50,14 @@ class AccountCredential {
       userId: userId ?? this.userId,
       points: points ?? this.points,
       isValid: isValid ?? this.isValid,
-      remark: remark ?? this.remark,
-      defaultRegionCode: defaultRegionCode ?? this.defaultRegionCode,
+      remark: identical(remark, _noChange) ? this.remark : remark as String?,
+      defaultRegionCode: identical(defaultRegionCode, _noChange)
+          ? this.defaultRegionCode
+          : defaultRegionCode as String?,
       signInState: signInState ?? this.signInState,
-      lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
+      lastCheckedAt: identical(lastCheckedAt, _noChange)
+          ? this.lastCheckedAt
+          : lastCheckedAt as DateTime?,
     );
   }
 

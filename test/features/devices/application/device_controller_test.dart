@@ -102,8 +102,8 @@ void main() {
       expect(gateway.detailCredentialMobile, '15800000000');
       expect(gateway.dispenseCredentialMobile, '15800000000');
       expect(gateway.lastDispenseQuantity, 2);
-      expect(controller.logs.first, contains('15800000000'));
-      expect(controller.logs.first, contains('15L'));
+      expect(controller.logs.first.message, contains('15800000000'));
+      expect(controller.logs.first.message, contains('15L'));
     },
   );
 
@@ -132,7 +132,7 @@ void main() {
     await controller.sendCommand(quantity: 1);
 
     expect(gateway.dispenseCredentialMobile, '15700000000');
-    expect(controller.logs.first, contains('15700000000'));
+    expect(controller.logs.first.message, contains('15700000000'));
   });
 
   test(
@@ -177,6 +177,9 @@ void main() {
       expect(controller.lastError.value, contains('当日取水额度已耗尽'));
       expect(controller.lastError.value, contains('可切换其他账号'));
       expect(controller.availableCredentials, hasLength(2));
+      expect(controller.logs.first.message, contains('15700000000'));
+      expect(controller.logs.first.message, contains('取水失败'));
+      expect(controller.logs.first.createdAt, isA<DateTime>());
     },
   );
 

@@ -27,7 +27,7 @@ class TaskCenterPage extends GetView<DashboardController> {
             title: '取水记录',
             child: SizedBox(
               height: 180,
-              child: _DeviceLogList(logs: deviceController.logs),
+              child: LogPanel(logs: deviceController.logs),
             ),
           ),
           const SizedBox(height: 10),
@@ -67,30 +67,6 @@ class TaskCenterPage extends GetView<DashboardController> {
   }
 }
 
-class _DeviceLogList extends StatelessWidget {
-  const _DeviceLogList({required this.logs});
-
-  final List<String> logs;
-
-  @override
-  Widget build(BuildContext context) {
-    if (logs.isEmpty) {
-      return const Center(child: Text('暂无取水记录'));
-    }
-
-    return ListView(
-      children: logs
-          .map(
-            (log) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(log),
-            ),
-          )
-          .toList(growable: false),
-    );
-  }
-}
-
 class _BillList extends StatelessWidget {
   const _BillList({required this.controller});
 
@@ -120,6 +96,11 @@ class _BillList extends StatelessWidget {
                 children: [
                   Text('${bill.billTypeLabel} · ${bill.directionLabel}'),
                   const SizedBox(height: 4),
+                  Text(
+                    _formatDateTime(bill.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
                   Text('变动 ${bill.amount}，变化后总积分 ${bill.totalAmount}'),
                   if (bill.remark != null && bill.remark!.isNotEmpty)
                     Text(bill.remark!),
@@ -129,5 +110,14 @@ class _BillList extends StatelessWidget {
           )
           .toList(growable: false),
     );
+  }
+
+  String _formatDateTime(DateTime value) {
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    final second = value.second.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day $hour:$minute:$second';
   }
 }

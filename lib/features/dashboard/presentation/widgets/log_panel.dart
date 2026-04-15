@@ -39,7 +39,7 @@ class LogPanel extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                entry.createdAt.toIso8601String(),
+                _formatDateTime(entry.createdAt),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -49,5 +49,14 @@ class LogPanel extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _formatDateTime(DateTime value) {
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    final second = value.second.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day $hour:$minute:$second';
   }
 }
