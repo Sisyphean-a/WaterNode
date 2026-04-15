@@ -2,12 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter Debug",
-      "request": "launch",
-      "type": "dart",
-      "deviceId": "${input:flutterDevice}"
-    },
-    {
       "name": "Flutter Windows",
       "request": "launch",
       "type": "dart",
@@ -18,18 +12,6 @@
       "request": "launch",
       "type": "dart",
       "deviceId": "android"
-    }
-  ],
-  "inputs": [
-    {
-      "id": "flutterDevice",
-      "type": "pickString",
-      "description": "选择调试设备",
-      "default": "windows",
-      "options": [
-        "windows",
-        "android"
-      ]
     }
   ]
 }

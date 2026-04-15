@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:waternode/app/app.dart';
+import 'package:waternode/app/application/console_shell_controller.dart';
 import 'package:waternode/app/dependencies/app_dependencies.dart';
+import 'package:waternode/app/routes/app_routes.dart';
 
 void main() {
-  testWidgets('opens sidebar and navigates to device station page', (
+  testWidgets('keeps single route while switching workbench modules', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -12,48 +15,40 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('首页概览'), findsOneWidget);
+    expect(Get.currentRoute, AppRoutes.dashboard);
 
-    await tester.tap(find.byTooltip('展开导航'));
+    await tester.tap(find.byKey(const Key('open-drawer')));
     await tester.pumpAndSettle();
 
-    expect(find.text('设备中心'), findsOneWidget);
     await tester.tap(find.text('终端大厅'));
     await tester.pumpAndSettle();
 
+    expect(Get.currentRoute, AppRoutes.dashboard);
     expect(find.text('终端管理大厅'), findsOneWidget);
-    expect(find.text('免费接水配置'), findsOneWidget);
+    expect(find.text('免费配置'), findsOneWidget);
     expect(find.text('立即取水 7.5L'), findsWidgets);
   });
 
-  testWidgets('moves account pages into sidebar and keeps home lightweight', (
-    tester,
-  ) async {
+  testWidgets('shows compact credential workspace actions', (tester) async {
     await tester.pumpWidget(
       WaterNodeApp(dependencies: AppDependencies.inMemory()),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('执行批量打卡'), findsNothing);
-    expect(find.text('执行批量积分抽取'), findsNothing);
-
-    await tester.tap(find.byTooltip('展开导航'));
+    await tester.tap(find.byKey(const Key('open-drawer')));
     await tester.pumpAndSettle();
 
-    expect(find.text('账号中心'), findsOneWidget);
     await tester.tap(find.text('凭证管理'));
     await tester.pumpAndSettle();
 
-    expect(find.text('凭证管理'), findsOneWidget);
-    expect(find.text('新增登录凭证'), findsOneWidget);
+    expect(find.text('凭证库'), findsWidgets);
     expect(find.text('刷新积分'), findsOneWidget);
+    expect(find.text('新增凭证'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('展开导航'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('登录授权'));
+    Get.find<ConsoleShellController>().selectRoute(AppRoutes.auth);
     await tester.pumpAndSettle();
 
-    expect(find.text('登录授权'), findsOneWidget);
+    expect(find.text('登录授权'), findsWidgets);
     expect(find.text('获取验证码'), findsOneWidget);
   });
 
@@ -63,19 +58,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('执行批量打卡'), findsNothing);
-    expect(find.text('执行批量积分抽取'), findsNothing);
+    expect(find.text('批量签到'), findsNothing);
+    expect(find.text('批量抽奖'), findsNothing);
 
-    await tester.tap(find.byTooltip('展开导航'));
+    await tester.tap(find.byKey(const Key('open-drawer')));
     await tester.pumpAndSettle();
 
-    expect(find.text('任务中心'), findsOneWidget);
     await tester.tap(find.text('批量任务'));
     await tester.pumpAndSettle();
 
     expect(find.text('批量任务'), findsWidgets);
-    expect(find.text('执行批量打卡'), findsOneWidget);
-    expect(find.text('执行批量积分抽取'), findsOneWidget);
+    expect(find.text('批量签到'), findsOneWidget);
+    expect(find.text('批量抽奖'), findsOneWidget);
   });
 
   testWidgets('navigates to device station when tapping home water action', (
@@ -86,10 +80,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('首页概览'), findsOneWidget);
     expect(find.text('终端管理大厅'), findsNothing);
 
-    await tester.tap(find.widgetWithText(FilledButton, '立即取水'));
+    await tester.tap(find.text('进入终端大厅').first);
     await tester.pumpAndSettle();
 
     expect(find.text('终端管理大厅'), findsOneWidget);
@@ -104,18 +97,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('展开导航'));
+    await tester.tap(find.byKey(const Key('open-drawer')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('凭证管理'));
     await tester.pumpAndSettle();
 
-    expect(find.text('凭证管理'), findsOneWidget);
-    expect(find.text('登录授权'), findsNothing);
+    expect(find.text('凭证库'), findsWidgets);
+    expect(find.text('保存凭证'), findsNothing);
+    expect(find.byKey(const Key('open-auth-workspace')), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, '新增登录凭证'));
+    Get.find<ConsoleShellController>().selectRoute(AppRoutes.auth);
     await tester.pumpAndSettle();
 
-    expect(find.text('登录授权'), findsOneWidget);
+    expect(find.text('保存凭证'), findsOneWidget);
     expect(find.text('获取验证码'), findsOneWidget);
   });
 

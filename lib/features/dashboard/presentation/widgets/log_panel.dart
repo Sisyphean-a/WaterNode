@@ -16,15 +16,36 @@ class LogPanel extends StatelessWidget {
       itemCount: logs.length,
       itemBuilder: (context, index) {
         final entry = logs[index];
-        return ListTile(
-          dense: true,
-          title: Text(
-            entry.message,
-            style: TextStyle(
-              color: entry.isError ? Theme.of(context).colorScheme.error : null,
+        final theme = Theme.of(context);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.42,
             ),
+            borderRadius: BorderRadius.circular(10),
           ),
-          subtitle: Text(entry.createdAt.toIso8601String()),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.message,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: entry.isError ? theme.colorScheme.error : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                entry.createdAt.toIso8601String(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

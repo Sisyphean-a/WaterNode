@@ -20,7 +20,17 @@ class WaterNodeApp extends StatelessWidget {
       getPages: AppPages.routes,
       initialBinding: AppBinding(_dependencies),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0F766E)),
+        useMaterial3: true,
+        visualDensity: VisualDensity.compact,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF166534),
+          surface: const Color(0xFFF5F7F7),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF0F3F4),
+        inputDecorationTheme: const InputDecorationTheme(
+          isDense: true,
+          border: OutlineInputBorder(),
+        ),
       ),
     );
   }

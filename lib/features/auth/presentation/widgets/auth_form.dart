@@ -22,31 +22,41 @@ class AuthForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TextField(
-          controller: mobileController,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: '手机号'),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: codeController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: '验证码'),
-        ),
-        const SizedBox(height: 24),
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
-                onPressed: isSendingCode ? null : onSendCode,
-                child: Text(isSendingCode ? '发送中...' : '获取验证码'),
+              child: TextField(
+                controller: mobileController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: '手机号'),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 140,
+              child: OutlinedButton(
+                onPressed: isSendingCode ? null : onSendCode,
+                child: Text(isSendingCode ? '发送中' : '获取验证码'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
             Expanded(
+              child: TextField(
+                controller: codeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: '验证码'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 140,
               child: FilledButton(
                 onPressed: isLoggingIn ? null : onLogin,
-                child: Text(isLoggingIn ? '登录中...' : '提交授权'),
+                child: Text(isLoggingIn ? '提交中' : '保存凭证'),
               ),
             ),
           ],

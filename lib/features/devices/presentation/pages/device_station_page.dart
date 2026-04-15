@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:waternode/app/presentation/widgets/workbench_section.dart';
 import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/models/region_option.dart';
 import 'package:waternode/features/devices/presentation/widgets/device_station_card.dart';
@@ -11,103 +12,158 @@ class DeviceStationPage extends GetView<DeviceController> {
   Widget build(BuildContext context) {
     return Obx(
       () => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<RegionOption>(
-                  key: ValueKey(controller.selectedSource.value?.code),
-                  initialValue: controller.selectedSource.value,
-                  decoration: const InputDecoration(labelText: '设备列表'),
-                  items: controller.sources
-                      .map(
-                        (item) => DropdownMenuItem<RegionOption>(
-                          value: item,
-                          child: Text(item.name),
-                        ),
-                      )
-                      .toList(growable: false),
-                  onChanged: controller.selectSource,
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.tonalIcon(
-                onPressed: controller.isLoading.value
-                    ? null
-                    : () async {
-                        try {
-                          await controller.loadStations();
-                        } catch (error) {
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(error.toString())),
-                          );
-                        }
-                      },
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('刷新设备'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _FreeWaterConfigCard(controller: controller),
-          if (controller.lastError.value != null) ...[
-            const SizedBox(height: 12),
-            _ErrorBanner(message: controller.lastError.value!),
-          ],
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
+          WorkbenchSection(
+            title: '终端筛选',
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                if (controller.isLoading.value)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (controller.stations.isEmpty)
-                  const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text('当前列表没有可用设备。'),
-                    ),
-                  )
-                else
-                  for (final station in controller.stations)
-                    DeviceStationCard(
-                      station: station,
-                      actionLabel: _buildActionLabel(),
-                      isDispatching:
-                          controller.dispatchingStationId.value == station.id,
-                      onDispatch: () async {
-                        try {
-                          await controller.sendCommand(station);
-                        } catch (error) {
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(error.toString())),
-                          );
-                        }
-                      },
-                    ),
-                if (controller.logs.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  for (final log in controller.logs) ListTile(title: Text(log)),
-                ],
+                SizedBox(
+                  width: 240,
+                  child: DropdownButtonFormField<RegionOption>(
+                    key: ValueKey(controller.selectedSource.value?.code),
+                    initialValue: controller.selectedSource.value,
+                    decoration: const InputDecoration(labelText: '数据源'),
+                    items: controller.sources
+                        .map(
+                          (item) => DropdownMenuItem<RegionOption>(
+                            value: item,
+                            child: Text(item.name),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: controller.selectSource,
+                  ),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () => controller.loadStations(),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('刷新设备'),
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          WorkbenchSection(
+            title: '免费配置',
+            child: _ConfigStrip(controller: controller),
+          ),
+          if (controller.lastError.value != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              controller.lastError.value!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 980) {
+                  return _DeviceBody(controller: controller);
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _StationList(controller: controller),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: _DeviceLogs(controller: controller),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  String _buildActionLabel() {
+class _DeviceBody extends StatelessWidget {
+  const _DeviceBody({required this.controller});
+
+  final DeviceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(child: _StationList(controller: controller)),
+        const SizedBox(height: 10),
+        SizedBox(height: 180, child: _DeviceLogs(controller: controller)),
+      ],
+    );
+  }
+}
+
+class _ConfigStrip extends StatelessWidget {
+  const _ConfigStrip({required this.controller});
+
+  final DeviceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = controller.freeWaterConfig.value;
+    if (config == null) {
+      return const Text('尚未加载配置');
+    }
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      children: [
+        Text('默认 ${config.waterVolume.toStringAsFixed(1)}L'),
+        Text('日上限 ${config.dayLimit} 次'),
+        Text('豆值 ${config.beanValue}'),
+      ],
+    );
+  }
+}
+
+class _StationList extends StatelessWidget {
+  const _StationList({required this.controller});
+
+  final DeviceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return WorkbenchSection(
+      title: '设备列表',
+      expandChild: true,
+      child: controller.isLoading.value
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              children: [
+                for (final station in controller.stations)
+                  DeviceStationCard(
+                    station: station,
+                    actionLabel: _buildActionLabel(controller),
+                    isDispatching:
+                        controller.dispatchingStationId.value == station.id,
+                    onDispatch: () => controller.sendCommand(station),
+                  ),
+                if (controller.stations.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 24),
+                    child: Center(child: Text('当前列表没有可用设备')),
+                  ),
+              ],
+            ),
+    );
+  }
+
+  String _buildActionLabel(DeviceController controller) {
     final config = controller.freeWaterConfig.value;
     if (config == null) {
       return '立即取水';
@@ -116,49 +172,26 @@ class DeviceStationPage extends GetView<DeviceController> {
   }
 }
 
-class _FreeWaterConfigCard extends StatelessWidget {
-  const _FreeWaterConfigCard({required this.controller});
+class _DeviceLogs extends StatelessWidget {
+  const _DeviceLogs({required this.controller});
 
   final DeviceController controller;
 
   @override
   Widget build(BuildContext context) {
-    final config = controller.freeWaterConfig.value;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('免费接水配置', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            if (config == null)
-              const Text('尚未加载配置。')
-            else
-              Text(
-                '默认 ${config.waterVolume.toStringAsFixed(1)}L/次，'
-                '每日上限 ${config.dayLimit} 次，'
-                '豆值 ${config.beanValue}。',
-              ),
-          ],
-        ),
+    return WorkbenchSection(
+      title: '执行反馈',
+      expandChild: true,
+      child: ListView(
+        children: [
+          for (final log in controller.logs)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(log),
+            ),
+          if (controller.logs.isEmpty) const Text('尚无取水执行记录'),
+        ],
       ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.errorContainer,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(padding: const EdgeInsets.all(16), child: Text(message)),
     );
   }
 }

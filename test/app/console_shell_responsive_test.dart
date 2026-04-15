@@ -16,8 +16,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('取水操作'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, '立即取水'), findsOneWidget);
+    expect(find.text('快捷操作'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '进入终端大厅'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -33,15 +33,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('展开导航'));
+    await tester.tap(find.byKey(const Key('open-drawer')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('终端大厅'));
     await tester.pumpAndSettle();
 
     expect(find.text('终端管理大厅'), findsOneWidget);
-    expect(find.text('设备列表'), findsOneWidget);
+    expect(find.text('数据源'), findsOneWidget);
     expect(find.text('刷新设备'), findsOneWidget);
-    expect(find.text('免费接水配置'), findsOneWidget);
+    expect(find.text('免费配置'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -60,7 +60,7 @@ void main() {
     await tester.tap(find.byTooltip('展开导航'));
     await tester.pumpAndSettle();
 
-    expect(find.text('设备中心'), findsOneWidget);
+    expect(find.text('设备中心'), findsWidgets);
     expect(find.byTooltip('收起导航'), findsOneWidget);
 
     await tester.tap(find.text('终端大厅'));

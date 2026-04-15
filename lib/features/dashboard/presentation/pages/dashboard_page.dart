@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:waternode/app/application/console_shell_controller.dart';
+import 'package:waternode/app/presentation/widgets/workbench_section.dart';
 import 'package:waternode/app/routes/app_routes.dart';
 import 'package:waternode/features/dashboard/application/dashboard_controller.dart';
 import 'package:waternode/features/dashboard/presentation/widgets/summary_panel.dart';
@@ -9,105 +11,128 @@ class DashboardPage extends GetView<DashboardController> {
 
   @override
   Widget build(BuildContext context) {
+    final shell = Get.find<ConsoleShellController>();
+
     return Obx(
       () => ListView(
         children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              SizedBox(
+                width: 160,
+                child: SummaryPanel(
+                  label: '账号总数',
+                  value: '${controller.totalCount}',
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: SummaryPanel(
+                  label: '在线账号',
+                  value: '${controller.validCount}',
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: SummaryPanel(
+                  label: '总积分',
+                  value: '${controller.totalPoints}',
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: SummaryPanel(
+                  label: '失效账号',
+                  value: '${controller.invalidCount}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
-              final cardWidth = constraints.maxWidth >= 980
-                  ? (constraints.maxWidth - 24) / 3
-                  : constraints.maxWidth >= 640
-                  ? (constraints.maxWidth - 12) / 2
-                  : constraints.maxWidth;
+              final singleColumn = constraints.maxWidth < 860;
+              if (singleColumn) {
+                return Column(
+                  children: [
+                    _QuickActions(shell: shell),
+                    const SizedBox(height: 10),
+                    _LatestLog(logMessage: _latestLogMessage(controller)),
+                  ],
+                );
+              }
 
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: cardWidth,
-                    child: SummaryPanel(
-                      label: '总账号数',
-                      value: '${controller.totalCount}',
-                    ),
-                  ),
-                  SizedBox(
-                    width: cardWidth,
-                    child: SummaryPanel(
-                      label: '在线账号',
-                      value: '${controller.validCount}',
-                    ),
-                  ),
-                  SizedBox(
-                    width: cardWidth,
-                    child: SummaryPanel(
-                      label: '总积分池',
-                      value: '${controller.totalPoints}',
+                  Expanded(child: _QuickActions(shell: shell)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _LatestLog(
+                      logMessage: _latestLogMessage(controller),
                     ),
                   ),
                 ],
               );
             },
           ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '取水操作',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '进入终端大厅后，可按区域选择设备并直接下发取水指令。',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  FilledButton.icon(
-                    onPressed: () => Get.offNamed<dynamic>(AppRoutes.devices),
-                    icon: const Icon(Icons.water_drop_rounded),
-                    label: const Text('立即取水'),
-                  ),
-                ],
-              ),
-            ),
+        ],
+      ),
+    );
+  }
+
+  String _latestLogMessage(DashboardController controller) {
+    if (controller.logs.isEmpty) {
+      return '尚无批量任务日志';
+    }
+    return controller.logs.first.message;
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({required this.shell});
+
+  final ConsoleShellController shell;
+
+  @override
+  Widget build(BuildContext context) {
+    return WorkbenchSection(
+      title: '快捷操作',
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          FilledButton.icon(
+            key: const Key('open-devices-workspace'),
+            onPressed: () => shell.selectRoute(AppRoutes.devices),
+            icon: const Icon(Icons.water_drop_rounded),
+            label: const Text('进入终端大厅'),
           ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('运行快照', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    '当前已载入 ${controller.totalCount} 个账号，可用 '
-                    '${controller.validCount} 个，待处理失效账号 '
-                    '${controller.invalidCount} 个。',
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    controller.logs.isEmpty
-                        ? '暂无批处理日志，首页仅保留状态展示与取水入口。'
-                        : controller.logs.first.message,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
+          FilledButton.tonalIcon(
+            onPressed: () => shell.selectRoute(AppRoutes.tasks),
+            icon: const Icon(Icons.task_alt_rounded),
+            label: const Text('打开批量任务'),
+          ),
+          FilledButton.tonalIcon(
+            onPressed: () => shell.selectRoute(AppRoutes.credentials),
+            icon: const Icon(Icons.badge_rounded),
+            label: const Text('查看凭证库'),
           ),
         ],
       ),
     );
+  }
+}
+
+class _LatestLog extends StatelessWidget {
+  const _LatestLog({required this.logMessage});
+
+  final String logMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return WorkbenchSection(title: '最新日志', child: Text(logMessage));
   }
 }

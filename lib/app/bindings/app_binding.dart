@@ -14,6 +14,7 @@ class AppBinding extends Bindings {
   @override
   void dependencies() {
     Get.put(ConsoleShellController(), permanent: true);
+    Get.find<ConsoleShellController>().reset();
     Get.put(_dependencies.accountRepository, permanent: true);
     Get.put(_dependencies.authGateway, permanent: true);
     Get.put(_dependencies.activityGateway, permanent: true);
