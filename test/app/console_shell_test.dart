@@ -22,7 +22,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('终端管理大厅'), findsOneWidget);
-    expect(find.text('下发指令'), findsWidgets);
+    expect(find.text('免费接水配置'), findsOneWidget);
+    expect(find.text('立即取水 7.5L'), findsWidgets);
   });
 
   testWidgets('moves account pages into sidebar and keeps home lightweight', (
@@ -91,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('终端管理大厅'), findsOneWidget);
-    expect(find.text('下发指令'), findsWidgets);
+    expect(find.text('立即取水 7.5L'), findsWidgets);
   });
 
   testWidgets('navigates to auth page when tapping add credential action', (

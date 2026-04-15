@@ -15,6 +15,7 @@ import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 import 'package:waternode/features/dashboard/infrastructure/activity_api.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/infrastructure/device_api.dart';
+import 'package:waternode/features/devices/infrastructure/memory_device_gateway.dart';
 
 class AppDependencies {
   const AppDependencies({
@@ -49,20 +50,38 @@ class AppDependencies {
       accountRepository: HiveAccountRepository(box),
       authGateway: AuthApi(client, headers),
       activityGateway: ActivityApi(client, headers),
-      deviceGateway: DeviceApi(),
+      deviceGateway: DeviceApi(client, headers),
       tokenPayloadParser: parser,
     );
   }
 
   static AppDependencies inMemory() {
     final parser = TokenPayloadParser();
+    final repository = MemoryAccountRepository(<AccountCredential>[
+      AccountCredential(
+        mobile: '15700000000',
+        token: _buildInMemoryToken(),
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'memory-device',
+        userId: 'memory-user',
+        points: 3,
+        isValid: true,
+      ),
+    ]);
     return AppDependencies(
-      accountRepository: MemoryAccountRepository(),
+      accountRepository: repository,
       authGateway: const _StubAuthGateway(),
       activityGateway: const _StubActivityGateway(),
-      deviceGateway: DeviceApi(),
+      deviceGateway: const MemoryDeviceGateway(),
       tokenPayloadParser: parser,
     );
+  }
+
+  static String _buildInMemoryToken() {
+    return 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.'
+        'eyJwbGF0Zm9ybVR5cGUiOiJDVVNUT01FUl9BUF'
+        'AiLCJkZXZpY2VJZCI6Im1lbW9yeS1kZXZpY2UiLCJ1c2VySWQiOiJtZW1vcnktdXNlciJ9.'
+        'signature';
   }
 }
 

@@ -2,6 +2,15 @@ import 'package:waternode/features/credentials/domain/models/account_credential.
 import 'package:waternode/features/credentials/domain/repositories/account_repository.dart';
 
 class MemoryAccountRepository implements AccountRepository {
+  MemoryAccountRepository([
+    Iterable<AccountCredential> initialCredentials =
+        const <AccountCredential>[],
+  ]) {
+    for (final credential in initialCredentials) {
+      _storage[credential.mobile] = credential;
+    }
+  }
+
   final Map<String, AccountCredential> _storage = <String, AccountCredential>{};
 
   @override

@@ -3,6 +3,7 @@ import 'package:waternode/features/credentials/application/credential_controller
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
+import 'package:waternode/features/devices/domain/models/free_water_config.dart';
 import 'package:waternode/features/devices/domain/models/region_option.dart';
 
 class DeviceController extends GetxController {
@@ -11,89 +12,106 @@ class DeviceController extends GetxController {
   final CredentialController _credentialController;
   final DeviceGateway _deviceGateway;
 
-  final regions = <RegionOption>[
-    const RegionOption(
-      code: 'east',
-      name: '华东',
-      children: <RegionOption>[
-        RegionOption(code: 'east-sh', name: '上海'),
-        RegionOption(code: 'east-js', name: '江苏'),
-      ],
-    ),
-    const RegionOption(
-      code: 'south',
-      name: '华南',
-      children: <RegionOption>[RegionOption(code: 'south-gd', name: '广东')],
-    ),
+  final sources = <RegionOption>[
+    const RegionOption(code: 'in-village', name: '当前村设备'),
+    const RegionOption(code: 'default-page', name: '默认分页设备'),
   ].obs;
 
-  final selectedParent = Rxn<RegionOption>();
-  final selectedChild = Rxn<RegionOption>();
+  final selectedSource = Rxn<RegionOption>();
+  final freeWaterConfig = Rxn<FreeWaterConfig>();
   final stations = <DeviceStation>[].obs;
   final logs = <String>[].obs;
+  final isLoading = false.obs;
+  final dispatchingStationId = RxnString();
+  final lastError = RxnString();
 
   @override
   void onInit() {
     super.onInit();
-    selectedParent.value = regions.first;
-    selectedChild.value = regions.first.children.first;
-    loadStations();
+    selectedSource.value = sources.first;
+    _initializeStations();
   }
 
-  List<RegionOption> get childOptions =>
-      selectedParent.value?.children ?? const <RegionOption>[];
-
-  void selectParent(RegionOption? region) {
-    if (region == null) {
+  void selectSource(RegionOption? source) {
+    if (source == null) {
       return;
     }
-    selectedParent.value = region;
-    selectedChild.value = region.children.isEmpty
-        ? null
-        : region.children.first;
-    loadStations();
+    selectedSource.value = source;
+    _initializeStations();
   }
 
-  void selectChild(RegionOption? region) {
-    selectedChild.value = region;
-    loadStations();
-  }
-
-  void loadStations() {
-    final regionCode = selectedChild.value?.code ?? selectedParent.value?.code;
-    if (regionCode == null) {
+  Future<void> loadStations() async {
+    final source = selectedSource.value ?? sources.firstOrNull;
+    if (source == null) {
       stations.clear();
+      freeWaterConfig.value = null;
       return;
     }
-    stations.assignAll(<DeviceStation>[
-      DeviceStation(
-        id: '$regionCode-01',
-        name: '终端 A',
-        status: 'ONLINE',
-        regionCode: regionCode,
-      ),
-      DeviceStation(
-        id: '$regionCode-02',
-        name: '终端 B',
-        status: 'OFFLINE',
-        regionCode: regionCode,
-      ),
-    ]);
+    selectedSource.value = source;
+
+    isLoading.value = true;
+    lastError.value = null;
+    try {
+      await _credentialController.load();
+      final credential = _findQueryCredential();
+      final config = await _deviceGateway.getFreeWaterConfig(credential);
+      if (!config.isOn) {
+        throw StateError('免费接水活动未开启');
+      }
+      final loadedStations = await _deviceGateway.getWaterStations(
+        regionCode: source.code,
+        credential: credential,
+      );
+      freeWaterConfig.value = config;
+      stations.assignAll(loadedStations);
+    } catch (error) {
+      lastError.value = error.toString();
+      stations.clear();
+      freeWaterConfig.value = null;
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> sendCommand(DeviceStation station) async {
     final credential = _findDispatchCredential();
+    final config =
+        freeWaterConfig.value ??
+        await _deviceGateway.getFreeWaterConfig(credential);
+    dispatchingStationId.value = station.id;
     try {
-      await _deviceGateway.dispenseWater(
+      final detail = await _deviceGateway.getStationDetail(
         stationId: station.id,
-        volume: 1,
         credential: credential,
       );
-      logs.insert(0, '${station.name} 指令下发成功');
+      await _deviceGateway.dispenseWater(
+        stationId: station.id,
+        quantity: 1,
+        credential: credential,
+      );
+      logs.insert(
+        0,
+        '${credential.mobile} 对 ${detail.name} 取水成功 '
+        '${config.waterVolume.toStringAsFixed(1)}L',
+      );
     } catch (error) {
-      logs.insert(0, '${station.name} 指令下发失败: $error');
+      logs.insert(0, '${station.name} 取水失败: $error');
       rethrow;
+    } finally {
+      dispatchingStationId.value = null;
     }
+  }
+
+  void _initializeStations() {
+    loadStations().catchError((_) {});
+  }
+
+  AccountCredential _findQueryCredential() {
+    return _credentialController.credentials.firstWhere(
+      (item) => item.isValid,
+      orElse: () => throw StateError('没有可用的有效账号用于加载设备列表'),
+    );
   }
 
   AccountCredential _findDispatchCredential() {

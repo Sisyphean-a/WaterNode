@@ -39,8 +39,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('终端管理大厅'), findsOneWidget);
-    expect(find.text('大区'), findsOneWidget);
-    expect(find.text('区域'), findsOneWidget);
+    expect(find.text('设备列表'), findsOneWidget);
+    expect(find.text('刷新设备'), findsOneWidget);
+    expect(find.text('免费接水配置'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
