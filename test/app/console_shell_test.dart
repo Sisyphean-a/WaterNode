@@ -76,6 +76,47 @@ void main() {
     expect(find.text('执行批量积分抽取'), findsOneWidget);
   });
 
+  testWidgets('navigates to device station when tapping home water action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      WaterNodeApp(dependencies: AppDependencies.inMemory()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('首页概览'), findsOneWidget);
+    expect(find.text('终端管理大厅'), findsNothing);
+
+    await tester.tap(find.widgetWithText(FilledButton, '立即取水'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('终端管理大厅'), findsOneWidget);
+    expect(find.text('下发指令'), findsWidgets);
+  });
+
+  testWidgets('navigates to auth page when tapping add credential action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      WaterNodeApp(dependencies: AppDependencies.inMemory()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('展开导航'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('凭证管理'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('凭证管理'), findsOneWidget);
+    expect(find.text('登录授权'), findsNothing);
+
+    await tester.tap(find.widgetWithText(FilledButton, '新增登录凭证'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('登录授权'), findsOneWidget);
+    expect(find.text('获取验证码'), findsOneWidget);
+  });
+
   testWidgets('shows tooltips for collapsed sidebar items on wide layout', (
     tester,
   ) async {
