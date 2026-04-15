@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:waternode/app/application/console_shell_controller.dart';
 import 'package:waternode/app/routes/app_routes.dart';
 import 'package:waternode/features/auth/presentation/pages/auth_page.dart';
 import 'package:waternode/features/credentials/presentation/pages/credential_page.dart';
@@ -7,103 +8,99 @@ import 'package:waternode/features/dashboard/presentation/pages/dashboard_page.d
 import 'package:waternode/features/dashboard/presentation/pages/task_center_page.dart';
 import 'package:waternode/features/devices/presentation/pages/device_station_page.dart';
 
-class ConsoleShellPage extends StatefulWidget {
+class ConsoleShellPage extends GetView<ConsoleShellController> {
   const ConsoleShellPage({super.key, required this.activeRoute});
 
   final String activeRoute;
 
   @override
-  State<ConsoleShellPage> createState() => _ConsoleShellPageState();
-}
-
-class _ConsoleShellPageState extends State<ConsoleShellPage> {
-  bool _isSidebarExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final activeItem = _ConsoleNavigationCatalog.find(widget.activeRoute);
-    final isWideLayout = MediaQuery.sizeOf(context).width >= 980;
+    return Obx(() {
+      final theme = Theme.of(context);
+      final activeItem = _ConsoleNavigationCatalog.find(activeRoute);
+      final isWideLayout = MediaQuery.sizeOf(context).width >= 980;
+      final isSidebarExpanded = controller.isSidebarExpanded.value;
 
-    return Scaffold(
-      drawer: isWideLayout
-          ? null
-          : Drawer(
-              child: SafeArea(
-                child: _ConsoleSidebar(
-                  activeRoute: widget.activeRoute,
-                  isExpanded: true,
-                  onSelectRoute: _handleRouteChange,
-                ),
-              ),
-            ),
-      body: SafeArea(
-        child: Row(
-          children: [
-            if (isWideLayout)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                width: _isSidebarExpanded ? 280 : 92,
-                child: _ConsoleSidebar(
-                  activeRoute: widget.activeRoute,
-                  isExpanded: _isSidebarExpanded,
-                  onSelectRoute: _handleRouteChange,
-                ),
-              ),
-            Expanded(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Color.alphaBlend(
-                    theme.colorScheme.primary.withValues(alpha: 0.04),
-                    theme.colorScheme.surface,
+      return Scaffold(
+        drawer: isWideLayout
+            ? null
+            : Drawer(
+                child: SafeArea(
+                  child: _ConsoleSidebar(
+                    activeRoute: activeRoute,
+                    isExpanded: true,
+                    onSelectRoute: (route) =>
+                        _handleRouteChange(context, route),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    _ConsoleHeader(
-                      title: activeItem.headerTitle,
-                      section: activeItem.groupTitle,
-                      isWideLayout: isWideLayout,
-                      isSidebarExpanded: _isSidebarExpanded,
-                      onToggleSidebar: () {
-                        if (!isWideLayout) {
-                          return;
-                        }
-                        setState(() {
-                          _isSidebarExpanded = !_isSidebarExpanded;
-                        });
-                      },
+              ),
+        body: SafeArea(
+          child: Row(
+            children: [
+              if (isWideLayout)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  width: isSidebarExpanded ? 280 : 92,
+                  child: _ConsoleSidebar(
+                    activeRoute: activeRoute,
+                    isExpanded: isSidebarExpanded,
+                    onSelectRoute: (route) =>
+                        _handleRouteChange(context, route),
+                  ),
+                ),
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color.alphaBlend(
+                      theme.colorScheme.primary.withValues(alpha: 0.04),
+                      theme.colorScheme.surface,
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: _buildContent(),
+                  ),
+                  child: Column(
+                    children: [
+                      _ConsoleHeader(
+                        title: activeItem.headerTitle,
+                        section: activeItem.groupTitle,
+                        isWideLayout: isWideLayout,
+                        isSidebarExpanded: isSidebarExpanded,
+                        onToggleSidebar: () {
+                          if (!isWideLayout) {
+                            return;
+                          }
+                          controller.toggleSidebar();
+                        },
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: _buildContent(),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildContent() {
-    return switch (widget.activeRoute) {
+    return switch (activeRoute) {
       AppRoutes.dashboard => const DashboardPage(),
       AppRoutes.tasks => const TaskCenterPage(),
       AppRoutes.devices => const DeviceStationPage(),
@@ -113,8 +110,8 @@ class _ConsoleShellPageState extends State<ConsoleShellPage> {
     };
   }
 
-  void _handleRouteChange(String route) {
-    if (route == widget.activeRoute) {
+  void _handleRouteChange(BuildContext context, String route) {
+    if (route == activeRoute) {
       Navigator.of(context).maybePop();
       return;
     }

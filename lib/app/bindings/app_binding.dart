@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:waternode/app/application/console_shell_controller.dart';
 import 'package:waternode/app/dependencies/app_dependencies.dart';
 import 'package:waternode/features/auth/application/auth_controller.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
@@ -12,6 +13,7 @@ class AppBinding extends Bindings {
 
   @override
   void dependencies() {
+    Get.put(ConsoleShellController(), permanent: true);
     Get.put(_dependencies.accountRepository, permanent: true);
     Get.put(_dependencies.authGateway, permanent: true);
     Get.put(_dependencies.activityGateway, permanent: true);
