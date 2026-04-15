@@ -1,20 +1,16 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waternode/app/app.dart';
 import 'package:waternode/app/dependencies/app_dependencies.dart';
 
 void main() {
-  testWidgets('shows dashboard title', (tester) async {
+  testWidgets('shows console home overview', (tester) async {
     await tester.pumpWidget(
       WaterNodeApp(dependencies: AppDependencies.inMemory()),
     );
 
-    expect(find.text('控制台首页'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('首页概览'), findsOneWidget);
+    expect(find.text('取水操作'), findsOneWidget);
   });
 }

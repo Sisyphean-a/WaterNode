@@ -9,28 +9,43 @@ class CredentialPage extends GetView<CredentialController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('凭证管理')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Get.toNamed(AppRoutes.auth),
-        child: const Icon(Icons.add),
-      ),
-      body: Obx(
-        () => RefreshIndicator(
-          onRefresh: controller.refreshStatuses,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              for (final credential in controller.credentials)
-                CredentialCard(credential: credential),
-              if (controller.credentials.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 48),
-                  child: Center(child: Text('暂无测试账号')),
-                ),
-            ],
+    return Obx(
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: () => Get.offNamed<dynamic>(AppRoutes.auth),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('新增登录凭证'),
+            ),
           ),
-        ),
+          if (controller.lastError.value != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              controller.lastError.value!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: controller.refreshStatuses,
+              child: ListView(
+                children: [
+                  for (final credential in controller.credentials)
+                    CredentialCard(credential: credential),
+                  if (controller.credentials.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 48),
+                      child: Center(child: Text('暂无测试账号')),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

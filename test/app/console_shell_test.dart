@@ -1,0 +1,56 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:waternode/app/app.dart';
+import 'package:waternode/app/dependencies/app_dependencies.dart';
+
+void main() {
+  testWidgets('opens sidebar and navigates to device station page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      WaterNodeApp(dependencies: AppDependencies.inMemory()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('首页概览'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('展开导航'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('设备中心'), findsOneWidget);
+    await tester.tap(find.text('终端大厅'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('终端管理大厅'), findsOneWidget);
+    expect(find.text('下发指令'), findsWidgets);
+  });
+
+  testWidgets('moves account pages into sidebar and keeps home lightweight', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      WaterNodeApp(dependencies: AppDependencies.inMemory()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('执行批量打卡'), findsNothing);
+    expect(find.text('执行批量积分抽取'), findsNothing);
+
+    await tester.tap(find.byTooltip('展开导航'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('账号中心'), findsOneWidget);
+    await tester.tap(find.text('凭证管理'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('凭证管理'), findsOneWidget);
+    expect(find.text('新增登录凭证'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('展开导航'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('登录授权'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('登录授权'), findsOneWidget);
+    expect(find.text('获取验证码'), findsOneWidget);
+  });
+}

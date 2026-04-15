@@ -9,77 +9,70 @@ class DeviceStationPage extends GetView<DeviceController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('终端管理大厅')),
-      body: Obx(
-        () => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+    return Obx(
+      () => Column(
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<RegionOption>(
-                      initialValue: controller.selectedParent.value,
-                      decoration: const InputDecoration(labelText: '大区'),
-                      items: controller.regions
-                          .map(
-                            (item) => DropdownMenuItem<RegionOption>(
-                              value: item,
-                              child: Text(item.name),
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: controller.selectParent,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<RegionOption>(
-                      initialValue: controller.selectedChild.value,
-                      decoration: const InputDecoration(labelText: '区域'),
-                      items: controller.childOptions
-                          .map(
-                            (item) => DropdownMenuItem<RegionOption>(
-                              value: item,
-                              child: Text(item.name),
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: controller.selectChild,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               Expanded(
-                child: ListView(
-                  children: [
-                    for (final station in controller.stations)
-                      DeviceStationCard(
-                        station: station,
-                        onDispatch: () async {
-                          try {
-                            await controller.sendCommand(station);
-                          } catch (error) {
-                            if (!context.mounted) {
-                              return;
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(error.toString())),
-                            );
-                          }
-                        },
-                      ),
-                    if (controller.logs.isNotEmpty) const Divider(),
-                    for (final log in controller.logs)
-                      ListTile(title: Text(log)),
-                  ],
+                child: DropdownButtonFormField<RegionOption>(
+                  initialValue: controller.selectedParent.value,
+                  decoration: const InputDecoration(labelText: '大区'),
+                  items: controller.regions
+                      .map(
+                        (item) => DropdownMenuItem<RegionOption>(
+                          value: item,
+                          child: Text(item.name),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: controller.selectParent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<RegionOption>(
+                  initialValue: controller.selectedChild.value,
+                  decoration: const InputDecoration(labelText: '区域'),
+                  items: controller.childOptions
+                      .map(
+                        (item) => DropdownMenuItem<RegionOption>(
+                          value: item,
+                          child: Text(item.name),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: controller.selectChild,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              children: [
+                for (final station in controller.stations)
+                  DeviceStationCard(
+                    station: station,
+                    onDispatch: () async {
+                      try {
+                        await controller.sendCommand(station);
+                      } catch (error) {
+                        if (!context.mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(error.toString())),
+                        );
+                      }
+                    },
+                  ),
+                if (controller.logs.isNotEmpty) const Divider(),
+                for (final log in controller.logs) ListTile(title: Text(log)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

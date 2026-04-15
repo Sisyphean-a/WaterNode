@@ -46,7 +46,7 @@ class AuthForm extends StatelessWidget {
             Expanded(
               child: FilledButton(
                 onPressed: isLoggingIn ? null : onLogin,
-                child: Text(isLoggingIn ? '登录中...' : '登录授权'),
+                child: Text(isLoggingIn ? '登录中...' : '提交授权'),
               ),
             ),
           ],
