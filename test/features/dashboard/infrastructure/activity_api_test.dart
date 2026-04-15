@@ -38,12 +38,8 @@ void main() {
       'data': <String, dynamic>{'totalFee': 10125.0},
       'ok': true,
     };
-    client.responseForGet['/marketing/userSgin/consSignDay'] = <String, dynamic>{
-      'code': '200',
-      'msg': '操作成功',
-      'data': 62,
-      'ok': true,
-    };
+    client.responseForGet['/marketing/userSgin/consSignDay'] =
+        <String, dynamic>{'code': '200', 'msg': '操作成功', 'data': 62, 'ok': true};
 
     final status = await api.fetchStatus(credential);
 
@@ -99,38 +95,42 @@ void main() {
     },
   );
 
-  test('fetchStatus marks account as not signed in when consSignDay is false', () async {
-    final credential = AccountCredential(
-      mobile: '15700000000',
-      token: _buildToken(
+  test(
+    'fetchStatus marks account as not signed in when consSignDay is false',
+    () async {
+      final credential = AccountCredential(
+        mobile: '15700000000',
+        token: _buildToken(
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-1',
+          userId: 'user-need-sign',
+        ),
         platformType: 'CUSTOMER_APP',
         deviceId: 'device-1',
         userId: 'user-need-sign',
-      ),
-      platformType: 'CUSTOMER_APP',
-      deviceId: 'device-1',
-      userId: 'user-need-sign',
-      points: 0,
-      isValid: true,
-    );
-    client.responseForGet['/pay/account/coin/user'] = <String, dynamic>{
-      'code': '200',
-      'data': <String, dynamic>{'totalFee': 1200},
-      'ok': true,
-    };
-    client.responseForGet['/marketing/userSgin/consSignDay'] = <String, dynamic>{
-      'code': '200',
-      'msg': '操作成功',
-      'data': 0,
-      'ok': false,
-    };
+        points: 0,
+        isValid: true,
+      );
+      client.responseForGet['/pay/account/coin/user'] = <String, dynamic>{
+        'code': '200',
+        'data': <String, dynamic>{'totalFee': 1200},
+        'ok': true,
+      };
+      client.responseForGet['/marketing/userSgin/consSignDay'] =
+          <String, dynamic>{
+            'code': '200',
+            'msg': '操作成功',
+            'data': 0,
+            'ok': false,
+          };
 
-    final status = await api.fetchStatus(credential);
+      final status = await api.fetchStatus(credential);
 
-    expect(status.isValid, isTrue);
-    expect(status.points, 1200);
-    expect(status.signInState, AccountSignInState.available);
-  });
+      expect(status.isValid, isTrue);
+      expect(status.points, 1200);
+      expect(status.signInState, AccountSignInState.available);
+    },
+  );
 
   test('fetchBills reads recent bean bills from real endpoint', () async {
     final credential = AccountCredential(
@@ -146,35 +146,36 @@ void main() {
       points: 0,
       isValid: true,
     );
-    client.responseForGet['/pay/user/accountDetail/bean/list'] = <String, dynamic>{
-      'code': '200',
-      'msg': '操作成功',
-      'data': <String, dynamic>{
-        'content': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'amount': 200.0,
-            'inOrPay': 'OUT',
-            'inOrPayDesc': '支出',
-            'billType': 'SCAN_FETCH_WATER',
-            'billTypeDesc': '扫码取水',
-            'createTime': '2026-04-15 19:43:46',
-            'remark': '扫码取水扣除小康豆',
-            'totalAmount': 10125.0,
+    client.responseForGet['/pay/user/accountDetail/bean/list'] =
+        <String, dynamic>{
+          'code': '200',
+          'msg': '操作成功',
+          'data': <String, dynamic>{
+            'content': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'amount': 200.0,
+                'inOrPay': 'OUT',
+                'inOrPayDesc': '支出',
+                'billType': 'SCAN_FETCH_WATER',
+                'billTypeDesc': '扫码取水',
+                'createTime': '2026-04-15 19:43:46',
+                'remark': '扫码取水扣除小康豆',
+                'totalAmount': 10125.0,
+              },
+              <String, dynamic>{
+                'amount': 70.0,
+                'inOrPay': 'IN',
+                'inOrPayDesc': '收入',
+                'billType': 'SIGN_IN',
+                'billTypeDesc': '用户签到',
+                'createTime': '2026-04-15 05:26:28',
+                'remark': '签到奖励',
+                'totalAmount': 10495.0,
+              },
+            ],
           },
-          <String, dynamic>{
-            'amount': 70.0,
-            'inOrPay': 'IN',
-            'inOrPayDesc': '收入',
-            'billType': 'SIGN_IN',
-            'billTypeDesc': '用户签到',
-            'createTime': '2026-04-15 05:26:28',
-            'remark': '签到奖励',
-            'totalAmount': 10495.0,
-          },
-        ],
-      },
-      'ok': true,
-    };
+          'ok': true,
+        };
 
     final bills = await api.fetchBills(credential);
 

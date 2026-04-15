@@ -5,7 +5,6 @@ import 'package:waternode/app/presentation/widgets/workbench_section.dart';
 import 'package:waternode/app/routes/app_routes.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
 import 'package:waternode/features/credentials/presentation/widgets/credential_card.dart';
-import 'package:waternode/features/dashboard/presentation/widgets/summary_panel.dart';
 
 class CredentialPage extends GetView<CredentialController> {
   const CredentialPage({super.key});
@@ -19,7 +18,7 @@ class CredentialPage extends GetView<CredentialController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           WorkbenchSection(
-            title: '凭证库',
+            title: '账号管理',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -38,35 +37,7 @@ class CredentialPage extends GetView<CredentialController> {
                       key: const Key('open-auth-workspace'),
                       onPressed: () => shell.selectRoute(AppRoutes.auth),
                       icon: const Icon(Icons.add_rounded),
-                      label: const Text('新增凭证'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: SummaryPanel(
-                        label: '账号数',
-                        value: '${controller.totalCount}',
-                      ),
-                    ),
-                    SizedBox(
-                      width: 120,
-                      child: SummaryPanel(
-                        label: '在线',
-                        value: '${controller.validCount}',
-                      ),
-                    ),
-                    SizedBox(
-                      width: 120,
-                      child: SummaryPanel(
-                        label: '积分池',
-                        value: '${controller.totalPoints}',
-                      ),
+                      label: const Text('新增账号'),
                     ),
                   ],
                 ),
@@ -93,14 +64,21 @@ class CredentialPage extends GetView<CredentialController> {
                   children: [
                     Row(
                       children: const [
-                        Expanded(flex: 3, child: Text('手机号')),
+                        Expanded(flex: 3, child: Text('账号')),
+                        Expanded(flex: 3, child: Text('备注')),
                         Expanded(child: Text('积分', textAlign: TextAlign.right)),
-                        SizedBox(width: 78),
+                        SizedBox(width: 96),
                       ],
                     ),
                     const SizedBox(height: 8),
                     for (final credential in controller.credentials)
-                      CredentialCard(credential: credential),
+                      CredentialCard(
+                        credential: credential,
+                        onSaveRemark: (remark) => controller.updateAccountMeta(
+                          credential,
+                          remark: remark.trim().isEmpty ? null : remark.trim(),
+                        ),
+                      ),
                     if (controller.credentials.isEmpty)
                       const Padding(
                         padding: EdgeInsets.only(top: 24),

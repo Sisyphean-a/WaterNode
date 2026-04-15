@@ -14,8 +14,15 @@ class ConsoleShellController extends GetxController {
     isSidebarExpanded.value = !isSidebarExpanded.value;
   }
 
-  void selectRoute(String route, {bool closeDrawer = false}) {
+  void selectRoute(
+    String route, {
+    bool closeDrawer = false,
+    bool collapseSidebar = false,
+  }) {
     activeRoute.value = route;
+    if (collapseSidebar) {
+      isSidebarExpanded.value = false;
+    }
     if (closeDrawer && Get.isOverlaysOpen) {
       Get.back<void>();
     }

@@ -105,11 +105,7 @@ class ActivityApi implements ActivityGateway {
 
   Map<String, String> _buildBillHeaders(AccountCredential credential) {
     final headers = _buildBalanceHeaders(credential);
-    return <String, String>{
-      ...headers,
-      'Page-Num': '1',
-      'Page-Size': '10',
-    };
+    return <String, String>{...headers, 'Page-Num': '1', 'Page-Size': '10'};
   }
 
   int _readBalance(Map<String, dynamic> data) {
@@ -134,9 +130,9 @@ class ActivityApi implements ActivityGateway {
       billType: data['billType']?.toString() ?? '',
       billTypeLabel: data['billTypeDesc']?.toString() ?? '',
       createdAt: DateTime.parse(data['createTime'] as String),
-      totalAmount: _readBalance(
-        <String, dynamic>{'totalFee': data['totalAmount']},
-      ),
+      totalAmount: _readBalance(<String, dynamic>{
+        'totalFee': data['totalAmount'],
+      }),
       remark: data['remark']?.toString(),
     );
   }

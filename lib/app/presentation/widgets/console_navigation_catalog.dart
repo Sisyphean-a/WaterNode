@@ -4,61 +4,43 @@ import 'package:waternode/app/routes/app_routes.dart';
 class ConsoleNavigationCatalog {
   static const groups = <ConsoleNavigationGroup>[
     ConsoleNavigationGroup(
-      title: '总览中心',
+      title: '工作台',
       items: <ConsoleNavigationItem>[
         ConsoleNavigationItem(
           route: AppRoutes.dashboard,
-          title: '首页概览',
-          headerTitle: '系统快照',
-          subtitle: '状态与快捷入口',
-          groupTitle: '总览中心',
+          title: '首页工作台',
+          headerTitle: '首页工作台',
+          subtitle: '取水入口、核心统计与批量操作',
+          groupTitle: '工作台',
           icon: Icons.space_dashboard_rounded,
         ),
-      ],
-    ),
-    ConsoleNavigationGroup(
-      title: '任务中心',
-      items: <ConsoleNavigationItem>[
         ConsoleNavigationItem(
-          route: AppRoutes.tasks,
-          title: '批量任务',
-          headerTitle: '批量任务',
-          subtitle: '签到与抽奖调度',
-          groupTitle: '任务中心',
-          icon: Icons.task_alt_rounded,
+          route: AppRoutes.logs,
+          title: '结果日志',
+          headerTitle: '结果追踪',
+          subtitle: '操作记录与账单核对',
+          groupTitle: '工作台',
+          icon: Icons.receipt_long_rounded,
         ),
       ],
     ),
     ConsoleNavigationGroup(
-      title: '设备中心',
-      items: <ConsoleNavigationItem>[
-        ConsoleNavigationItem(
-          route: AppRoutes.devices,
-          title: '终端大厅',
-          headerTitle: '终端管理大厅',
-          subtitle: '设备筛选与取水',
-          groupTitle: '设备中心',
-          icon: Icons.water_drop_rounded,
-        ),
-      ],
-    ),
-    ConsoleNavigationGroup(
-      title: '账号中心',
+      title: '账号',
       items: <ConsoleNavigationItem>[
         ConsoleNavigationItem(
           route: AppRoutes.credentials,
-          title: '凭证管理',
-          headerTitle: '凭证库',
-          subtitle: '账号与积分状态',
-          groupTitle: '账号中心',
+          title: '账号管理',
+          headerTitle: '账号管理',
+          subtitle: '账号备注、积分与签到状态',
+          groupTitle: '账号',
           icon: Icons.badge_rounded,
         ),
         ConsoleNavigationItem(
           route: AppRoutes.auth,
           title: '登录授权',
           headerTitle: '登录授权',
-          subtitle: '新增测试凭证',
-          groupTitle: '账号中心',
+          subtitle: '新增或更新账号',
+          groupTitle: '账号',
           icon: Icons.login_rounded,
         ),
       ],

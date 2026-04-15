@@ -1,7 +1,1 @@
-enum AccountSignInState {
-  unknown,
-  available,
-  completed,
-  success,
-  failure,
-}
+enum AccountSignInState { unknown, available, completed, success, failure }

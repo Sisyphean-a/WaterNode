@@ -26,7 +26,7 @@ class DeviceStationPage extends GetView<DeviceController> {
                   child: DropdownButtonFormField<RegionOption>(
                     key: ValueKey(controller.selectedSource.value?.code),
                     initialValue: controller.selectedSource.value,
-                    decoration: const InputDecoration(labelText: '数据源'),
+                    decoration: const InputDecoration(labelText: '区域来源'),
                     items: controller.sources
                         .map(
                           (item) => DropdownMenuItem<RegionOption>(
@@ -151,7 +151,7 @@ class _StationList extends StatelessWidget {
                     actionLabel: _buildActionLabel(controller),
                     isDispatching:
                         controller.dispatchingStationId.value == station.id,
-                    onDispatch: () => controller.sendCommand(station),
+                    onDispatch: () => controller.sendCommand(station: station),
                   ),
                 if (controller.stations.isEmpty)
                   const Padding(

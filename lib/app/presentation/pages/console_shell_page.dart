@@ -8,7 +8,6 @@ import 'package:waternode/features/auth/presentation/pages/auth_page.dart';
 import 'package:waternode/features/credentials/presentation/pages/credential_page.dart';
 import 'package:waternode/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:waternode/features/dashboard/presentation/pages/task_center_page.dart';
-import 'package:waternode/features/devices/presentation/pages/device_station_page.dart';
 
 class ConsoleShellPage extends GetView<ConsoleShellController> {
   const ConsoleShellPage({super.key});
@@ -16,7 +15,6 @@ class ConsoleShellPage extends GetView<ConsoleShellController> {
   static const _pages = <Widget>[
     DashboardPage(),
     TaskCenterPage(),
-    DeviceStationPage(),
     CredentialPage(),
     AuthPage(),
   ];
@@ -37,8 +35,10 @@ class ConsoleShellPage extends GetView<ConsoleShellController> {
                   child: ConsoleSidebar(
                     activeRoute: controller.activeRoute.value,
                     isExpanded: true,
-                    onSelectRoute: (route) =>
-                        controller.selectRoute(route, closeDrawer: true),
+                    onSelectRoute: (route) {
+                      controller.selectRoute(route);
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ),
               ),
@@ -49,7 +49,8 @@ class ConsoleShellPage extends GetView<ConsoleShellController> {
                 ConsoleSidebar(
                   activeRoute: controller.activeRoute.value,
                   isExpanded: controller.isSidebarExpanded.value,
-                  onSelectRoute: controller.selectRoute,
+                  onSelectRoute: (route) =>
+                      controller.selectRoute(route, collapseSidebar: true),
                 ),
               Expanded(
                 child: ConsoleWorkspaceShell(

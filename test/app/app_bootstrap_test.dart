@@ -10,8 +10,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('系统快照'), findsOneWidget);
-    expect(find.text('快捷操作'), findsOneWidget);
-    expect(find.text('进入终端大厅'), findsOneWidget);
+    expect(find.text('首页工作台'), findsWidgets);
+    expect(find.text('选择账号'), findsOneWidget);
+    expect(find.text('立即取水 7.5L'), findsOneWidget);
   });
 }

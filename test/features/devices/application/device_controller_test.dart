@@ -12,52 +12,49 @@ import 'package:waternode/features/devices/domain/models/free_water_config.dart'
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 
 void main() {
-  test(
-    'defaults to highest-point account and its saved region',
-    () async {
-      final repository = MemoryAccountRepository();
-      await repository.save(
-        const AccountCredential(
-          mobile: '15700000000',
-          token: 'token-query',
-          platformType: 'CUSTOMER_APP',
-          deviceId: 'device-query',
-          userId: 'user-query',
-          points: 2,
-          isValid: true,
-        ),
-      );
-      await repository.save(
-        const AccountCredential(
-          mobile: '15800000000',
-          token: 'token-dispatch',
-          platformType: 'CUSTOMER_APP',
-          deviceId: 'device-dispatch',
-          userId: 'user-dispatch',
-          points: 8,
-          isValid: true,
-          defaultRegionCode: 'default-page',
-        ),
-      );
-      final credentialController = CredentialController(
-        repository,
-        _IdleActivityGateway(),
-      );
-      await credentialController.load();
-      final gateway = _RecordingDeviceGateway();
-      final controller = DeviceController(credentialController, gateway);
+  test('defaults to highest-point account and its saved region', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-query',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-query',
+        userId: 'user-query',
+        points: 2,
+        isValid: true,
+      ),
+    );
+    await repository.save(
+      const AccountCredential(
+        mobile: '15800000000',
+        token: 'token-dispatch',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-dispatch',
+        userId: 'user-dispatch',
+        points: 8,
+        isValid: true,
+        defaultRegionCode: 'default-page',
+      ),
+    );
+    final credentialController = CredentialController(
+      repository,
+      _IdleActivityGateway(),
+    );
+    await credentialController.load();
+    final gateway = _RecordingDeviceGateway();
+    final controller = DeviceController(credentialController, gateway);
 
-      await controller.prepareWorkbench();
+    await controller.prepareWorkbench();
 
-      expect(controller.freeWaterConfig.value?.waterVolume, 7.5);
-      expect(controller.stations, hasLength(1));
-      expect(controller.selectedCredential.value?.mobile, '15800000000');
-      expect(controller.selectedSource.value?.code, 'default-page');
-      expect(gateway.configCredentialMobile, '15800000000');
-      expect(gateway.stationCredentialMobile, '15800000000');
-      expect(controller.lastError.value, isNull);
-    },
-  );
+    expect(controller.freeWaterConfig.value?.waterVolume, 7.5);
+    expect(controller.stations, hasLength(1));
+    expect(controller.selectedCredential.value?.mobile, '15800000000');
+    expect(controller.selectedSource.value?.code, 'default-page');
+    expect(gateway.configCredentialMobile, '15800000000');
+    expect(gateway.stationCredentialMobile, '15800000000');
+    expect(controller.lastError.value, isNull);
+  });
 
   test(
     'dispatches selected water volume with selected account and records success log',

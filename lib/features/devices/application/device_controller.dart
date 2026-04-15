@@ -63,6 +63,9 @@ class DeviceController extends GetxController {
 
   void selectCredential(AccountCredential credential) {
     selectedCredential.value = credential;
+    _selectDefaultSource(credential).then((_) {
+      loadStations().catchError((_) {});
+    });
   }
 
   Future<void> selectSourceByCode(String code) async {

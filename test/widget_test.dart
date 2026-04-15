@@ -10,7 +10,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('系统快照'), findsOneWidget);
-    expect(find.text('最新日志'), findsOneWidget);
+    expect(find.text('首页工作台'), findsWidgets);
+    expect(find.text('选择账号'), findsOneWidget);
+    expect(find.text('批量操作'), findsOneWidget);
   });
 }
