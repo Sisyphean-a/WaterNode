@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/credentials/infrastructure/memory_account_repository.dart';
 import 'package:waternode/features/dashboard/application/dashboard_controller.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
+import 'package:waternode/features/dashboard/domain/models/account_bill.dart';
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 
 void main() {
@@ -78,7 +80,13 @@ class _DashboardGateway implements ActivityGateway {
     return AccountStatus(
       isValid: credential.isValid,
       points: credential.points,
+      signInState: AccountSignInState.unknown,
     );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
   }
 
   @override
@@ -96,7 +104,16 @@ class _RefreshingDashboardGateway implements ActivityGateway {
 
   @override
   Future<AccountStatus> fetchStatus(AccountCredential credential) async {
-    return const AccountStatus(isValid: true, points: 12);
+    return const AccountStatus(
+      isValid: true,
+      points: 12,
+      signInState: AccountSignInState.unknown,
+    );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
   }
 
   @override

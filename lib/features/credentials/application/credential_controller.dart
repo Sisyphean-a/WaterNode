@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/credentials/domain/repositories/account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
@@ -67,6 +68,7 @@ class CredentialController extends GetxController {
           credential.copyWith(
             points: status.points,
             isValid: status.isValid,
+            signInState: status.signInState,
             lastCheckedAt: DateTime.now(),
           ),
         );
@@ -79,5 +81,23 @@ class CredentialController extends GetxController {
     } finally {
       isRefreshing.value = false;
     }
+  }
+
+  Future<void> updateAccountMeta(
+    AccountCredential credential, {
+    String? remark,
+    String? defaultRegionCode,
+    AccountSignInState? signInState,
+  }) async {
+    final updated = credential.copyWith(
+      remark: remark,
+      defaultRegionCode: defaultRegionCode,
+      signInState: signInState,
+    );
+    await _repository.save(updated);
+    final next = credentials
+        .map((item) => item.mobile == credential.mobile ? updated : item)
+        .toList(growable: false);
+    credentials.assignAll(next);
   }
 }

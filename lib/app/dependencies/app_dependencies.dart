@@ -11,6 +11,7 @@ import 'package:waternode/features/credentials/domain/repositories/account_repos
 import 'package:waternode/features/credentials/infrastructure/hive_account_repository.dart';
 import 'package:waternode/features/credentials/infrastructure/memory_account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
+import 'package:waternode/features/dashboard/domain/models/account_bill.dart';
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 import 'package:waternode/features/dashboard/infrastructure/activity_api.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
@@ -112,6 +113,11 @@ class _StubActivityGateway implements ActivityGateway {
       isValid: credential.isValid,
       points: credential.points,
     );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
   }
 
   @override

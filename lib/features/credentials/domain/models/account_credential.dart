@@ -1,3 +1,5 @@
+import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
+
 class AccountCredential {
   const AccountCredential({
     required this.mobile,
@@ -7,6 +9,9 @@ class AccountCredential {
     required this.userId,
     required this.points,
     required this.isValid,
+    this.remark,
+    this.defaultRegionCode,
+    this.signInState = AccountSignInState.unknown,
     this.lastCheckedAt,
   });
 
@@ -17,6 +22,9 @@ class AccountCredential {
   final String userId;
   final int points;
   final bool isValid;
+  final String? remark;
+  final String? defaultRegionCode;
+  final AccountSignInState signInState;
   final DateTime? lastCheckedAt;
 
   AccountCredential copyWith({
@@ -27,6 +35,9 @@ class AccountCredential {
     String? userId,
     int? points,
     bool? isValid,
+    String? remark,
+    String? defaultRegionCode,
+    AccountSignInState? signInState,
     DateTime? lastCheckedAt,
   }) {
     return AccountCredential(
@@ -37,6 +48,9 @@ class AccountCredential {
       userId: userId ?? this.userId,
       points: points ?? this.points,
       isValid: isValid ?? this.isValid,
+      remark: remark ?? this.remark,
+      defaultRegionCode: defaultRegionCode ?? this.defaultRegionCode,
+      signInState: signInState ?? this.signInState,
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
     );
   }
@@ -50,6 +64,9 @@ class AccountCredential {
       'userId': userId,
       'points': points,
       'isValid': isValid,
+      'remark': remark,
+      'defaultRegionCode': defaultRegionCode,
+      'signInState': signInState.name,
       'lastCheckedAt': lastCheckedAt?.toIso8601String(),
     };
   }
@@ -63,6 +80,9 @@ class AccountCredential {
       userId: map['userId'] as String,
       points: map['points'] as int? ?? 0,
       isValid: map['isValid'] as bool? ?? false,
+      remark: map['remark'] as String?,
+      defaultRegionCode: map['defaultRegionCode'] as String?,
+      signInState: parseSignInState(map['signInState']),
       lastCheckedAt: parseDateTime(map['lastCheckedAt']),
     );
   }
@@ -72,5 +92,15 @@ class AccountCredential {
       return DateTime.parse(value);
     }
     return null;
+  }
+
+  static AccountSignInState parseSignInState(dynamic value) {
+    if (value is String) {
+      return AccountSignInState.values.firstWhere(
+        (item) => item.name == value,
+        orElse: () => AccountSignInState.unknown,
+      );
+    }
+    return AccountSignInState.unknown;
   }
 }

@@ -3,15 +3,17 @@ import 'package:waternode/features/credentials/application/credential_controller
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/credentials/infrastructure/memory_account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
+import 'package:waternode/features/dashboard/domain/models/account_bill.dart';
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
+import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 
 void main() {
   test(
-    'loads free water config and real stations with first valid account',
+    'defaults to highest-point account and its saved region',
     () async {
       final repository = MemoryAccountRepository();
       await repository.save(
@@ -21,7 +23,7 @@ void main() {
           platformType: 'CUSTOMER_APP',
           deviceId: 'device-query',
           userId: 'user-query',
-          points: 0,
+          points: 2,
           isValid: true,
         ),
       );
@@ -32,8 +34,9 @@ void main() {
           platformType: 'CUSTOMER_APP',
           deviceId: 'device-dispatch',
           userId: 'user-dispatch',
-          points: 3,
+          points: 8,
           isValid: true,
+          defaultRegionCode: 'default-page',
         ),
       );
       final credentialController = CredentialController(
@@ -44,19 +47,20 @@ void main() {
       final gateway = _RecordingDeviceGateway();
       final controller = DeviceController(credentialController, gateway);
 
-      await controller.loadStations();
+      await controller.prepareWorkbench();
 
       expect(controller.freeWaterConfig.value?.waterVolume, 7.5);
       expect(controller.stations, hasLength(1));
-      expect(controller.stations.single.name, '冯塘乡丁洼村');
-      expect(gateway.configCredentialMobile, '15700000000');
-      expect(gateway.stationCredentialMobile, '15700000000');
+      expect(controller.selectedCredential.value?.mobile, '15800000000');
+      expect(controller.selectedSource.value?.code, 'default-page');
+      expect(gateway.configCredentialMobile, '15800000000');
+      expect(gateway.stationCredentialMobile, '15800000000');
       expect(controller.lastError.value, isNull);
     },
   );
 
   test(
-    'dispatches water with points-positive account and records success log',
+    'dispatches selected water volume with selected account and records success log',
     () async {
       final repository = MemoryAccountRepository();
       await repository.save(
@@ -88,15 +92,21 @@ void main() {
       await credentialController.load();
       final gateway = _RecordingDeviceGateway();
       final controller = DeviceController(credentialController, gateway);
-      await controller.loadStations();
+      await controller.prepareWorkbench();
+      controller.selectCredential(
+        controller.availableCredentials.firstWhere(
+          (item) => item.mobile == '15800000000',
+        ),
+      );
+      await controller.selectSourceByCode('default-page');
 
-      await controller.sendCommand(controller.stations.single);
+      await controller.sendCommand(quantity: 2);
 
       expect(gateway.detailCredentialMobile, '15800000000');
       expect(gateway.dispenseCredentialMobile, '15800000000');
-      expect(gateway.lastDispenseQuantity, 1);
+      expect(gateway.lastDispenseQuantity, 2);
       expect(controller.logs.first, contains('15800000000'));
-      expect(controller.logs.first, contains('7.5L'));
+      expect(controller.logs.first, contains('15L'));
     },
   );
 
@@ -120,13 +130,58 @@ void main() {
     await credentialController.load();
     final gateway = _RecordingDeviceGateway();
     final controller = DeviceController(credentialController, gateway);
-    await controller.loadStations();
+    await controller.prepareWorkbench();
 
-    await controller.sendCommand(controller.stations.single);
+    await controller.sendCommand(quantity: 1);
 
     expect(gateway.dispenseCredentialMobile, '15700000000');
     expect(controller.logs.first, contains('15700000000'));
   });
+
+  test(
+    'marks quota-exhausted failure as business limit and keeps switching possible',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 5,
+          isValid: true,
+        ),
+      );
+      await repository.save(
+        const AccountCredential(
+          mobile: '15800000000',
+          token: 'token-other',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-other',
+          userId: 'user-other',
+          points: 4,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final gateway = _QuotaFailureDeviceGateway();
+      final controller = DeviceController(credentialController, gateway);
+
+      await controller.prepareWorkbench();
+      await expectLater(
+        () => controller.sendCommand(quantity: 1),
+        throwsA(isA<StateError>()),
+      );
+      expect(controller.lastError.value, contains('当日取水额度已耗尽'));
+      expect(controller.lastError.value, contains('可切换其他账号'));
+      expect(controller.availableCredentials, hasLength(2));
+    },
+  );
 
   test(
     'logs explicit failure when no valid account can load device list',
@@ -153,7 +208,10 @@ void main() {
         _RecordingDeviceGateway(),
       );
 
-      await expectLater(controller.loadStations, throwsA(isA<StateError>()));
+      await expectLater(
+        controller.prepareWorkbench,
+        throwsA(isA<StateError>()),
+      );
       expect(controller.lastError.value, contains('没有可用的有效账号'));
     },
   );
@@ -165,7 +223,13 @@ class _IdleActivityGateway implements ActivityGateway {
     return AccountStatus(
       isValid: credential.isValid,
       points: credential.points,
+      signInState: AccountSignInState.unknown,
     );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
   }
 
   @override
@@ -181,7 +245,16 @@ class _IdleActivityGateway implements ActivityGateway {
 class _RefreshingActivityGateway implements ActivityGateway {
   @override
   Future<AccountStatus> fetchStatus(AccountCredential credential) async {
-    return const AccountStatus(isValid: true, points: 5);
+    return const AccountStatus(
+      isValid: true,
+      points: 5,
+      signInState: AccountSignInState.unknown,
+    );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
   }
 
   @override
@@ -264,5 +337,16 @@ class _RecordingDeviceGateway implements DeviceGateway {
         dispenserTypeDesc: '全部免费',
       ),
     ];
+  }
+}
+
+class _QuotaFailureDeviceGateway extends _RecordingDeviceGateway {
+  @override
+  Future<void> dispenseWater({
+    required String stationId,
+    required int quantity,
+    required AccountCredential credential,
+  }) {
+    throw StateError('超出每日取水【2】次数,请明日再试');
   }
 }
