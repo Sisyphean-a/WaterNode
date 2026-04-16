@@ -186,6 +186,7 @@ Expected: PASS
 Run: `flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android`
 Expected: exit 0 and `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`,
 `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`,
+`build/app/outputs/flutter-apk/app-x86_64-release.apk`,
 `build/symbols/android/` exist.
 
 - [ ] **Step 2: 生成 Windows release 目录**

@@ -8,6 +8,8 @@ void main() {
 
     expect(guide.contains('flutter build apk --release --split-per-abi'), isTrue);
     expect(guide.contains('app-arm64-v8a-release.apk'), isTrue);
+    expect(guide.contains('app-armeabi-v7a-release.apk'), isTrue);
+    expect(guide.contains('app-x86_64-release.apk'), isTrue);
   });
 
   test('release packaging guide stores dart symbols outside release bundles', () {

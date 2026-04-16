@@ -30,12 +30,14 @@ flutter build apk --release --split-per-abi --split-debug-info=build/symbols/and
 
 - `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
 - `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+- `build/app/outputs/flutter-apk/app-x86_64-release.apk`
 
 说明：
 
 - Android release 已默认开启 `minify` 与 `shrinkResources`
 - 当前应用已改为系统字体栈，不再打包 48M 中文 OTF
 - 日常分发优先使用 `app-arm64-v8a-release.apk`
+- `app-x86_64-release.apk` 主要用于 x86_64 设备或模拟器验证，归档时也应一并保留
 - `build/symbols/android/` 里的 Dart 符号文件不要随包分发，但要和对应 APK 一起归档，便于后续还原堆栈
 
 ## Windows

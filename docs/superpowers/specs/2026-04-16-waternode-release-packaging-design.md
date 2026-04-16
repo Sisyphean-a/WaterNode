@@ -93,7 +93,8 @@
 1. 准备本地 keystore 与 `android/key.properties`
 2. 执行 `flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android`
 3. 产出 `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`、
-   `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+   `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`、
+   `build/app/outputs/flutter-apk/app-x86_64-release.apk`
 4. 同步归档 `build/symbols/android/` 中的 Dart 符号文件，不随 APK 分发
 
 ### Windows 打包

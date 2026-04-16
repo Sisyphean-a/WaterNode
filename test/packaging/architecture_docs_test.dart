@@ -37,7 +37,9 @@ void main() {
 
     expect(spec.contains('flutter build apk --release --split-per-abi'), isTrue);
     expect(spec.contains('--split-debug-info=build/symbols/android'), isTrue);
+    expect(spec.contains('app-armeabi-v7a-release.apk'), isTrue);
     expect(spec.contains('app-arm64-v8a-release.apk'), isTrue);
+    expect(spec.contains('app-x86_64-release.apk'), isTrue);
     expect(spec.contains('打包主位图'), isFalse);
     expect(spec.contains('平台图标生成输入位图'), isTrue);
 
@@ -47,6 +49,9 @@ void main() {
       ),
       isTrue,
     );
+    expect(plan.contains('app-armeabi-v7a-release.apk'), isTrue);
+    expect(plan.contains('app-arm64-v8a-release.apk'), isTrue);
+    expect(plan.contains('app-x86_64-release.apk'), isTrue);
     expect(
       plan.contains('flutter build windows --release --split-debug-info=build/symbols/windows'),
       isTrue,
