@@ -4,17 +4,58 @@ abstract final class AppTheme {
   static const fontFamily = 'NotoSansSC';
 
   static ThemeData build() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF4F46E5), // Indigo 600, a modern premium color
+      surface: Colors.white,
+      surfaceContainerLowest: Colors.white,
+    );
+
     final base = ThemeData(
       useMaterial3: true,
-      visualDensity: VisualDensity.compact,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF166534),
-        surface: const Color(0xFFF5F7F7),
+      visualDensity: VisualDensity.standard, // Better touch targets instead of compact
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Very light cool gray
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        space: 1,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF0F3F4),
-      inputDecorationTheme: const InputDecorationTheme(
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 0, // We will use custom shadow or very soft material shadow
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
         isDense: true,
-        border: OutlineInputBorder(),
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
       ),
     );
     final textTheme = _buildTextTheme(base.textTheme);

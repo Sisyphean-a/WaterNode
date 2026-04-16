@@ -30,41 +30,67 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => Align(
-        alignment: Alignment.topLeft,
-        child: SizedBox(
-          width: 520,
-          child: WorkbenchSection(
-            title: '登录授权',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AuthForm(
-                  mobileController: mobileController,
-                  codeController: codeController,
-                  onSendCode: () => controller.sendCode(mobileController.text),
-                  onLogin: () async {
-                    await controller.login(
-                      mobile: mobileController.text,
-                      smsCode: codeController.text,
-                    );
-                    if (mounted) {
-                      shell.selectRoute(AppRoutes.credentials);
-                    }
-                  },
-                  isSendingCode: controller.isSendingCode.value,
-                  isLoggingIn: controller.isLoggingIn.value,
-                ),
-                if (controller.lastError.value != null) ...[
-                  const SizedBox(height: 10),
+      () => Center(
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: WorkbenchSection(
+              title: '绑定或新增账号',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Text(
-                    controller.lastError.value!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                    '请输入您的手机号与短信验证码以完成授权操作',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  AuthForm(
+                    mobileController: mobileController,
+                    codeController: codeController,
+                    onSendCode: () => controller.sendCode(mobileController.text),
+                    onLogin: () async {
+                      await controller.login(
+                        mobile: mobileController.text,
+                        smsCode: codeController.text,
+                      );
+                      if (mounted) {
+                        shell.selectRoute(AppRoutes.credentials);
+                      }
+                    },
+                    isSendingCode: controller.isSendingCode.value,
+                    isLoggingIn: controller.isLoggingIn.value,
+                  ),
+                  if (controller.lastError.value != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              controller.lastError.value!,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

@@ -14,93 +14,82 @@ class CredentialPage extends GetView<CredentialController> {
   @override
   Widget build(BuildContext context) {
     final shell = Get.find<ConsoleShellController>();
+    final theme = Theme.of(context);
 
     return Obx(
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          WorkbenchSection(
-            title: '账号管理',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: controller.isRefreshing.value
-                          ? null
-                          : controller.refreshStatuses,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('刷新积分'),
-                    ),
-                    FilledButton.icon(
-                      key: const Key('open-token-import-dialog'),
-                      onPressed: controller.isImporting.value
-                          ? null
-                          : () => showDialog<void>(
-                              context: context,
-                              builder: (_) => TokenImportDialog(
-                                controller: controller,
-                              ),
-                            ),
-                      icon: const Icon(Icons.key_rounded),
-                      label: const Text('导入 Token'),
-                    ),
-                    FilledButton.icon(
-                      key: const Key('open-auth-workspace'),
-                      onPressed: () => shell.selectRoute(AppRoutes.auth),
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('新增账号'),
-                    ),
-                  ],
-                ),
-                if (controller.lastError.value != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    controller.lastError.value!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: controller.isRefreshing.value
+                    ? null
+                    : controller.refreshStatuses,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('刷新'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                key: const Key('open-token-import-dialog'),
+                onPressed: controller.isImporting.value
+                    ? null
+                    : () => showDialog<void>(
+                        context: context,
+                        builder: (_) => TokenImportDialog(
+                          controller: controller,
+                        ),
+                      ),
+                icon: const Icon(Icons.key_rounded),
+                label: const Text('导入 Token'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                key: const Key('open-auth-workspace'),
+                onPressed: () => shell.selectRoute(AppRoutes.auth),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('新增账号'),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          if (controller.lastError.value != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                controller.lastError.value!,
+                style: TextStyle(
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
           Expanded(
             child: WorkbenchSection(
-              title: '账号列表',
+              title: '您的通行证',
               expandChild: true,
               child: RefreshIndicator(
                 onRefresh: controller.refreshStatuses,
-                child: ListView(
-                  children: [
-                    Row(
-                      children: const [
-                        Expanded(flex: 3, child: Text('账号')),
-                        Expanded(flex: 3, child: Text('备注')),
-                        Expanded(child: Text('积分', textAlign: TextAlign.right)),
-                        SizedBox(width: 144),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    for (final credential in controller.credentials)
-                      CredentialCard(
-                        credential: credential,
-                        onSaveRemark: (remark) => controller.updateAccountMeta(
-                          credential,
-                          remark: remark.trim().isEmpty ? null : remark.trim(),
-                        ),
-                        onCopyToken: () => _copyToken(context, credential.token),
+                child: ListView.separated(
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemCount: controller.credentials.length,
+                  itemBuilder: (context, index) {
+                    final credential = controller.credentials[index];
+                    return CredentialCard(
+                      credential: credential,
+                      onSaveRemark: (remark) => controller.updateAccountMeta(
+                        credential,
+                        remark: remark.trim().isEmpty ? null : remark.trim(),
                       ),
-                    if (controller.credentials.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 24),
-                        child: Center(child: Text('暂无测试账号')),
-                      ),
-                  ],
+                      onCopyToken: () => _copyToken(context, credential.token),
+                    );
+                  },
                 ),
               ),
             ),

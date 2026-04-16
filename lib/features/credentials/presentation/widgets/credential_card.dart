@@ -46,76 +46,129 @@ class _CredentialCardState extends State<CredentialCard> {
     final theme = Theme.of(context);
     final credential = widget.credential;
     final statusColor = credential.isValid
-        ? Colors.green.shade700
+        ? Colors.green.shade600
         : theme.colorScheme.error;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Text(
-                  credential.mobile,
-                  style: theme.textTheme.labelLarge,
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: TextField(
-                  controller: _remarkController,
-                  decoration: const InputDecoration(
-                    labelText: '备注',
-                    isDense: true,
-                  ),
-                  onSubmitted: widget.onSaveRemark,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  '${credential.points}',
-                  textAlign: TextAlign.right,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  credential.isValid ? '有效' : '失效',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: statusColor,
-                  ),
-                ),
-              ),
-              IconButton(
-                key: Key('copy-token-${credential.mobile}'),
-                onPressed: widget.onCopyToken,
-                tooltip: '复制 Token',
-                icon: const Icon(Icons.copy_all_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '签到状态：${_signInStateLabel(credential.signInState)}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withValues(alpha: 0.02),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  child: const Icon(Icons.person_rounded),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        credential.mobile,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              credential.isValid ? '状态有效' : '已失效',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '打卡：${_signInStateLabel(credential.signInState)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '积分余额',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${credential.points}',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(color: theme.dividerColor.withValues(alpha: 0.05)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _remarkController,
+                    decoration: const InputDecoration(
+                      hintText: '添加备注名称...',
+                      isDense: true,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      contentPadding: EdgeInsets.zero,
+                      prefixIcon: Icon(Icons.edit_note_rounded, size: 20),
+                      prefixIconConstraints: BoxConstraints(minWidth: 28),
+                    ),
+                    style: theme.textTheme.bodyMedium,
+                    onSubmitted: widget.onSaveRemark,
+                  ),
+                ),
+                IconButton(
+                  key: Key('copy-token-${credential.mobile}'),
+                  onPressed: widget.onCopyToken,
+                  tooltip: '提取 Token',
+                  icon: const Icon(Icons.content_copy_rounded, size: 20),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -127,11 +180,11 @@ class _CredentialCardState extends State<CredentialCard> {
       case AccountSignInState.completed:
         return '已签到';
       case AccountSignInState.success:
-        return '本次签到成功';
+        return '签到成功';
       case AccountSignInState.failure:
-        return '签到失败';
+        return '异常';
       case AccountSignInState.unknown:
-        return '状态未知';
+        return '未知';
     }
   }
 }

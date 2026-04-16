@@ -26,49 +26,51 @@ class ConsoleShellPage extends GetView<ConsoleShellController> {
         controller.activeRoute.value,
       );
       final isWideLayout = MediaQuery.sizeOf(context).width >= 980;
+      final currentIndex = ConsoleNavigationCatalog.indexOf(
+        controller.activeRoute.value,
+      );
+
+      final content = ConsoleWorkspaceShell(
+        isWideLayout: isWideLayout,
+        activeItem: activeItem,
+        isSidebarExpanded: controller.isSidebarExpanded.value,
+        onToggleSidebar: controller.toggleSidebar,
+        child: IndexedStack(
+          index: currentIndex,
+          children: _pages,
+        ),
+      );
 
       return Scaffold(
-        drawer: isWideLayout
-            ? null
-            : Drawer(
-                child: SafeArea(
-                  child: ConsoleSidebar(
+        body: isWideLayout
+            ? Row(
+                children: [
+                  ConsoleSidebar(
                     activeRoute: controller.activeRoute.value,
-                    isExpanded: true,
-                    onSelectRoute: (route) {
-                      controller.selectRoute(route);
-                      Navigator.of(context).pop();
-                    },
+                    isExpanded: controller.isSidebarExpanded.value,
+                    onSelectRoute: (route) =>
+                        controller.selectRoute(route, collapseSidebar: true),
                   ),
-                ),
-              ),
-        body: SafeArea(
-          child: Row(
-            children: [
-              if (isWideLayout)
-                ConsoleSidebar(
-                  activeRoute: controller.activeRoute.value,
-                  isExpanded: controller.isSidebarExpanded.value,
-                  onSelectRoute: (route) =>
-                      controller.selectRoute(route, collapseSidebar: true),
-                ),
-              Expanded(
-                child: ConsoleWorkspaceShell(
-                  isWideLayout: isWideLayout,
-                  activeItem: activeItem,
-                  isSidebarExpanded: controller.isSidebarExpanded.value,
-                  onToggleSidebar: controller.toggleSidebar,
-                  child: IndexedStack(
-                    index: ConsoleNavigationCatalog.indexOf(
-                      controller.activeRoute.value,
+                  Expanded(child: content),
+                ],
+              )
+            : content,
+        bottomNavigationBar: isWideLayout
+            ? null
+            : NavigationBar(
+                selectedIndex: currentIndex,
+                onDestinationSelected: (index) {
+                  final item = ConsoleNavigationCatalog.items[index];
+                  controller.selectRoute(item.route);
+                },
+                destinations: [
+                  for (final item in ConsoleNavigationCatalog.items)
+                    NavigationDestination(
+                      icon: Icon(item.icon),
+                      label: item.title,
                     ),
-                    children: _pages,
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
       );
     });
   }
