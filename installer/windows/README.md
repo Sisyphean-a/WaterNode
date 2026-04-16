@@ -16,3 +16,8 @@ iscc installer/windows/waternode.iss
 输出文件：
 
 - `dist/windows/WaterNode Setup.exe`
+
+脚本默认开启：
+
+- `lzma2/ultra64` 高压缩
+- 排除 `.pdb` / `.lib` / `.exp` / `.ilk` 非运行时文件

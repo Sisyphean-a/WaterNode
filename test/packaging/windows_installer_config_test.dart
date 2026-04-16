@@ -7,6 +7,13 @@ void main() {
     expect(File('installer/windows/waternode.iss').existsSync(), isTrue);
   });
 
+  test('windows installer uses high compression and skips debug symbols', () {
+    final script = File('installer/windows/waternode.iss').readAsStringSync();
+
+    expect(script.contains('Compression=lzma2/ultra64'), isTrue);
+    expect(script.contains('Excludes: "*.pdb,*.lib,*.exp,*.ilk"'), isTrue);
+  });
+
   test('runner metadata uses WaterNode branding', () {
     final rc = File('windows/runner/Runner.rc').readAsStringSync();
 
