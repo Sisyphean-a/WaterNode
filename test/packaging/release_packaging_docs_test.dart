@@ -26,4 +26,12 @@ void main() {
       isTrue,
     );
   });
+
+  test('release packaging guide documents size guards before release', () {
+    final guide = File('docs/release-packaging.md').readAsStringSync();
+
+    expect(guide.contains('flutter test test/packaging'), isTrue);
+    expect(guide.contains('tool/packaging_asset_budget.json'), isTrue);
+    expect(guide.contains('1 MiB'), isTrue);
+  });
 }

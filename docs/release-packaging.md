@@ -61,3 +61,19 @@ iscc installer/windows/waternode.iss
 - 安装器使用 `lzma2/ultra64` 高压缩模式
 - 默认排除 `.pdb` / `.lib` / `.exp` / `.ilk` 等非运行时文件
 - `build/symbols/windows/` 里的 Dart 符号文件不要打进安装器，但需要和安装器版本一起留档
+
+## 发布前校验
+
+先执行：
+
+```bash
+flutter test test/packaging
+```
+
+这组守护测试会锁定当前体积约束：
+
+- Android 继续使用 `--split-per-abi` 与 `--split-debug-info`
+- Android release 继续保持 `minify` / `shrinkResources` 开启
+- 仓库继续不打包已移除的 48M 中文 OTF
+- `tool/packaging_asset_budget.json` 继续以 `1 MiB` 默认预算监控会进入安装包的资源目录
+- Windows 安装器继续使用 `lzma2/ultra64` 并排除 `.pdb` / `.lib` / `.exp` / `.ilk`
