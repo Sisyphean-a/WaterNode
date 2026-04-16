@@ -15,14 +15,17 @@ class CredentialController extends GetxController {
     this._activityGateway, [
     TokenPayloadParser? parser,
     AccountProfileGateway? accountProfileGateway,
+    Future<void> Function()? onCredentialsUpdated,
   ]) : _parser = parser ?? TokenPayloadParser(),
        _accountProfileGateway =
-           accountProfileGateway ?? const _UnsupportedAccountProfileGateway();
+           accountProfileGateway ?? const _UnsupportedAccountProfileGateway(),
+       _onCredentialsUpdated = onCredentialsUpdated;
 
   final AccountRepository _repository;
   final ActivityGateway _activityGateway;
   final TokenPayloadParser _parser;
   final AccountProfileGateway _accountProfileGateway;
+  final Future<void> Function()? _onCredentialsUpdated;
 
   final credentials = <AccountCredential>[].obs;
   final isRefreshing = false.obs;
@@ -123,6 +126,9 @@ class CredentialController extends GetxController {
       );
       await load();
       await refreshStatuses();
+      if (_onCredentialsUpdated != null) {
+        await _onCredentialsUpdated();
+      }
     } catch (error) {
       lastError.value = error.toString();
       rethrow;

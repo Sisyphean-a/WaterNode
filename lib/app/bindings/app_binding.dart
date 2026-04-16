@@ -28,6 +28,14 @@ class AppBinding extends Bindings {
         _dependencies.activityGateway,
         _dependencies.tokenPayloadParser,
         _dependencies.accountProfileGateway,
+        () async {
+          if (Get.isRegistered<DeviceController>()) {
+            await Get.find<DeviceController>().syncWorkbench();
+          }
+          if (Get.isRegistered<DashboardController>()) {
+            await Get.find<DashboardController>().loadBills();
+          }
+        },
       ),
       permanent: true,
     );
@@ -39,6 +47,8 @@ class AppBinding extends Bindings {
         onCredentialSaved: () async {
           await Get.find<CredentialController>().load();
           await Get.find<CredentialController>().refreshStatuses();
+          await Get.find<DeviceController>().syncWorkbench();
+          await Get.find<DashboardController>().loadBills();
         },
       ),
       permanent: true,

@@ -55,7 +55,7 @@ class DeviceController extends GetxController {
       await _credentialController.refreshStatuses();
       final credential = _resolveDefaultCredential();
       selectedCredential.value = credential;
-      await _selectDefaultSource(credential);
+      _selectDefaultSource(credential);
       await loadStations();
     } catch (error) {
       lastError.value = error.toString();
@@ -65,9 +65,8 @@ class DeviceController extends GetxController {
 
   void selectCredential(AccountCredential credential) {
     selectedCredential.value = credential;
-    _selectDefaultSource(credential).then((_) {
-      loadStations().catchError((_) {});
-    });
+    _selectDefaultSource(credential);
+    loadStations().catchError((_) {});
   }
 
   Future<void> selectSourceByCode(String code) async {
@@ -190,8 +189,40 @@ class DeviceController extends GetxController {
     selectedStation.value = station;
   }
 
-  Future<void> _selectDefaultSource(AccountCredential credential) async {
-    selectedSource.value = sources.firstOrNull;
+  Future<void> syncWorkbench() async {
+    final validCredentials = availableCredentials;
+    if (validCredentials.isEmpty) {
+      return;
+    }
+
+    final current = selectedCredential.value;
+    final keepCurrent =
+        current != null &&
+        current.isValid &&
+        validCredentials.any((item) => item.mobile == current.mobile);
+    final nextCredential = keepCurrent && validCredentials.length > 1
+        ? validCredentials.firstWhere((item) => item.mobile == current.mobile)
+        : validCredentials.first;
+    final credentialChanged = current?.mobile != nextCredential.mobile;
+
+    selectedCredential.value = nextCredential;
+    if (credentialChanged || selectedSource.value == null) {
+      _selectDefaultSource(nextCredential);
+    }
+    if (credentialChanged ||
+        stations.isEmpty ||
+        selectedStation.value == null ||
+        lastError.value != null) {
+      await loadStations();
+    }
+  }
+
+  void _selectDefaultSource(AccountCredential credential) {
+    selectedSource.value =
+        sources.firstWhereOrNull(
+          (item) => item.code == credential.defaultRegionCode,
+        ) ??
+        sources.firstOrNull;
   }
 
   AccountCredential _resolveDefaultCredential() {

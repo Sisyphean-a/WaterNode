@@ -1,0 +1,4 @@
+storeFile=keystore/waternode-release.jks
+storePassword=changeit
+keyAlias=waternode
+keyPassword=changeit

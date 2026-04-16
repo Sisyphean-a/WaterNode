@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:waternode/features/auth/infrastructure/token_payload_parser.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
+import 'package:waternode/features/credentials/domain/gateways/account_profile_gateway.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/credentials/infrastructure/memory_account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
@@ -297,6 +299,49 @@ void main() {
       expect(controller.lastError.value, contains('没有可用的有效账号'));
     },
   );
+
+  test(
+    'auto-selects first valid credential and loads stations after late account arrival',
+    () async {
+      final repository = MemoryAccountRepository();
+      late DeviceController controller;
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+        TokenPayloadParser(),
+        _FakeAccountProfileGateway(),
+        () async => controller.syncWorkbench(),
+      );
+      final gateway = _RecordingDeviceGateway();
+      controller = DeviceController(credentialController, gateway);
+      addTearDown(controller.onClose);
+
+      controller.onInit();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.selectedCredential.value, isNull);
+      expect(controller.lastError.value, contains('没有可用的有效账号'));
+
+      await credentialController.importToken(_buildImportToken());
+
+      expect(controller.selectedCredential.value?.mobile, '15700000000');
+      expect(controller.selectedStation.value?.id, 'device-1');
+      expect(controller.stations, isNotEmpty);
+      expect(controller.lastError.value, isNull);
+      expect(gateway.configCredentialMobile, '15700000000');
+    },
+  );
+}
+
+class _FakeAccountProfileGateway implements AccountProfileGateway {
+  @override
+  Future<String> fetchMobile(String token) async => '15700000000';
+}
+
+String _buildImportToken() {
+  return 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.'
+      'eyJwbGF0Zm9ybVR5cGUiOiJDVVNUT01FUl9BUFAiLCJkZXZpY2VJZCI6ImRldmljZS1xdWVyeSIsInVzZXJJZCI6InVzZXItcXVlcnkifQ.'
+      'signature';
 }
 
 class _IdleActivityGateway implements ActivityGateway {

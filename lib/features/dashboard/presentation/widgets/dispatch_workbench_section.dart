@@ -322,6 +322,10 @@ class DispatchWorkbenchSection extends StatelessWidget {
     final config = deviceController.freeWaterConfig.value;
     final estimatedCost = _estimatedCost(quantity, config);
 
+    if (!context.mounted) {
+      return;
+    }
+
     // 沉浸式底部操作确认面板 (取代了 AlertDialog)
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
