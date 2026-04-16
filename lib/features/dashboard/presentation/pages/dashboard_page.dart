@@ -6,6 +6,8 @@ import 'package:waternode/features/dashboard/presentation/widgets/dispatch_workb
 import 'package:waternode/features/dashboard/presentation/widgets/summary_panel.dart';
 import 'package:waternode/features/devices/application/device_controller.dart';
 
+const double _dashboardContentMaxWidth = 1180;
+
 class DashboardPage extends GetView<DashboardController> {
   const DashboardPage({super.key});
 
@@ -22,22 +24,34 @@ class DashboardPage extends GetView<DashboardController> {
       );
       return ListView(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SummaryPanel(label: '有效账号数', value: '$totalCount'),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: _dashboardContentMaxWidth,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SummaryPanel(label: '总可用积分', value: '$totalPoints'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: SummaryPanel(label: '有效账号数', value: '$totalCount'),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SummaryPanel(label: '总可用积分', value: '$totalPoints'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DispatchWorkbenchSection(
+                    credentialController: credentialController,
+                    deviceController: deviceController,
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          DispatchWorkbenchSection(
-            credentialController: credentialController,
-            deviceController: deviceController,
+            ),
           ),
         ],
       );

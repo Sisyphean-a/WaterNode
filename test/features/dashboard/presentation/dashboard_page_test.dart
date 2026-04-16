@@ -10,12 +10,15 @@ import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.da
 import 'package:waternode/features/dashboard/domain/models/account_bill.dart';
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 import 'package:waternode/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:waternode/features/dashboard/presentation/widgets/dispatch_workbench_section.dart';
 import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   tearDown(Get.reset);
 
   testWidgets(
@@ -197,6 +200,54 @@ void main() {
 
     expect(find.text('家里'), findsOneWidget);
     expect(find.text('尾号6427'), findsNothing);
+  });
+
+  testWidgets('constrains dashboard content width on desktop layout', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = MemoryAccountRepository(<AccountCredential>[
+      const AccountCredential(
+        mobile: '157000006427',
+        token: 'token-1',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 6,
+        isValid: true,
+      ),
+    ]);
+    final credentialController = CredentialController(
+      repository,
+      _DashboardActivityGateway(),
+    );
+    await credentialController.load();
+    final dashboardController = DashboardController(
+      credentialController,
+      _DashboardActivityGateway(),
+    );
+    final deviceController = DeviceController(
+      credentialController,
+      _DashboardDeviceGateway(),
+    );
+    await deviceController.prepareWorkbench();
+    Get.put<CredentialController>(credentialController);
+    Get.put<DashboardController>(dashboardController);
+    Get.put<DeviceController>(deviceController);
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: Scaffold(body: DashboardPage())),
+    );
+    await tester.pumpAndSettle();
+
+    final workbenchRect = tester.getRect(find.byType(DispatchWorkbenchSection));
+
+    expect(workbenchRect.width, lessThan(1280));
+    expect(workbenchRect.left, greaterThan(100));
+    expect(workbenchRect.right, lessThan(1500));
   });
 }
 
