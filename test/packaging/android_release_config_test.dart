@@ -27,6 +27,8 @@ void main() {
 
     expect(gradle.contains('applicationId = "com.waternode.app"'), isTrue);
     expect(gradle.contains('create("release")'), isTrue);
+    expect(gradle.contains('isMinifyEnabled = true'), isTrue);
+    expect(gradle.contains('isShrinkResources = true'), isTrue);
     expect(
       gradle.contains('signingConfig = signingConfigs.getByName("release")'),
       isTrue,
@@ -44,5 +46,12 @@ void main() {
 
   test('android signing template exists', () {
     expect(File('android/key.properties.example').existsSync(), isTrue);
+  });
+
+  test('pubspec does not bundle custom Chinese font assets', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+
+    expect(pubspec.contains("family: NotoSansSC"), isFalse);
+    expect(pubspec.contains('fonts/noto_sans_sc/'), isFalse);
   });
 }

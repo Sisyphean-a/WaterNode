@@ -1,7 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 abstract final class AppTheme {
-  static const fontFamily = 'NotoSansSC';
+  static const fontFamilyFallback = <String>[
+    'Microsoft YaHei UI',
+    'Microsoft YaHei',
+    'Noto Sans CJK SC',
+    'Noto Sans SC',
+    'Segoe UI',
+    'sans-serif',
+  ];
 
   static ThemeData build() {
     final colorScheme = ColorScheme.fromSeed(
@@ -12,7 +20,9 @@ abstract final class AppTheme {
 
     final base = ThemeData(
       useMaterial3: true,
-      visualDensity: VisualDensity.standard, // Better touch targets instead of compact
+      fontFamily: _primaryFontFamily(defaultTargetPlatform),
+      visualDensity:
+          VisualDensity.standard, // Better touch targets instead of compact
       colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Very light cool gray
       dividerTheme: DividerThemeData(
@@ -43,7 +53,10 @@ abstract final class AppTheme {
         isDense: true,
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -60,10 +73,7 @@ abstract final class AppTheme {
     );
     final textTheme = _buildTextTheme(base.textTheme);
 
-    return base.copyWith(
-      textTheme: textTheme,
-      primaryTextTheme: textTheme,
-    );
+    return base.copyWith(textTheme: textTheme, primaryTextTheme: textTheme);
   }
 
   static TextTheme _buildTextTheme(TextTheme base) {
@@ -88,10 +98,18 @@ abstract final class AppTheme {
 
   static TextStyle? _style(TextStyle? style, FontWeight fontWeight) {
     return style?.copyWith(
-      fontFamily: fontFamily,
+      fontFamilyFallback: fontFamilyFallback,
       fontWeight: fontWeight,
       height: 1.35,
       leadingDistribution: TextLeadingDistribution.even,
     );
+  }
+
+  static String? _primaryFontFamily(TargetPlatform platform) {
+    return switch (platform) {
+      TargetPlatform.android => 'sans-serif',
+      TargetPlatform.windows => 'Microsoft YaHei UI',
+      _ => null,
+    };
   }
 }
