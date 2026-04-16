@@ -161,6 +161,27 @@ void main() {
     expect(controller.credentials.single.token, isNotEmpty);
     expect(controller.credentials.single.isValid, isTrue);
     expect(controller.credentials.single.lastCheckedAt, isNotNull);
+    expect(controller.credentials.single.points, 88);
+  });
+
+  test('imports token with inline remark suffix', () async {
+    final repository = MemoryAccountRepository();
+    final controller = CredentialController(
+      repository,
+      _FakeActivityGateway(),
+      TokenPayloadParser(),
+      _FakeAccountProfileGateway(),
+    );
+
+    await controller.importToken('${_buildToken()}#家里');
+
+    expect(controller.credentials, hasLength(1));
+    expect(controller.credentials.single.token, _buildToken());
+    expect(controller.credentials.single.remark, '家里');
+
+    final persisted = await repository.readAll();
+    expect(persisted.single.token, _buildToken());
+    expect(persisted.single.remark, '家里');
   });
 
   test('rejects empty token import explicitly', () async {

@@ -74,12 +74,10 @@ void main() {
       expect((accountTop - pointsTop).abs(), lessThan(8));
       expect(find.text('尾号6427'), findsWidgets);
 
-      await tester.tap(find.byKey(const Key('workbench-account-select')));
+      await tester.tap(find.text('当 前 账 号'));
       await tester.pumpAndSettle();
 
       expect(find.text('家里'), findsOneWidget);
-      expect(find.text('157000006427'), findsNothing);
-      expect(find.text('15800000000'), findsNothing);
     },
   );
 
@@ -118,10 +116,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('设备列表'), findsNothing);
-      expect(find.text('设备终端'), findsOneWidget);
-      expect(find.byKey(const Key('workbench-source-select')), findsNothing);
-      expect(find.textContaining('目标：'), findsNothing);
+      expect(find.text('切换当前账号'), findsNothing);
+      expect(find.text('切换取水终端'), findsNothing);
       expect(find.text('7.5L'), findsOneWidget);
       expect(find.text('15L'), findsOneWidget);
       expect(find.text('取水 7.5L'), findsNothing);
@@ -141,17 +137,58 @@ void main() {
       await tester.tap(find.byKey(const Key('water-action-7.5')));
       await tester.pumpAndSettle();
 
-      expect(find.text('确认取水'), findsOneWidget);
+      expect(find.text('确认执行指令'), findsOneWidget);
       expect(find.text('7.5L'), findsWidgets);
+      expect(find.text('预计消耗 200 积分'), findsOneWidget);
       expect(gateway.lastDispenseQuantity, isNull);
 
-      await tester.tap(find.widgetWithText(FilledButton, '确认'));
+      await tester.tap(find.widgetWithText(FilledButton, '确认出水'));
       await tester.pumpAndSettle();
 
       expect(gateway.lastDispenseQuantity, 1);
       expect(find.text('一键自动化'), findsNothing);
     },
   );
+
+  testWidgets('shows doubled bean cost for 15L confirmation', (tester) async {
+    final repository = MemoryAccountRepository(<AccountCredential>[
+      const AccountCredential(
+        mobile: '157000006427',
+        token: 'token-1',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 6,
+        isValid: true,
+      ),
+    ]);
+    final credentialController = CredentialController(
+      repository,
+      _DashboardActivityGateway(),
+    );
+    await credentialController.load();
+    final dashboardController = DashboardController(
+      credentialController,
+      _DashboardActivityGateway(),
+    );
+    final gateway = _DashboardDeviceGateway();
+    final deviceController = DeviceController(credentialController, gateway);
+    await deviceController.prepareWorkbench();
+    Get.put<CredentialController>(credentialController);
+    Get.put<DashboardController>(dashboardController);
+    Get.put<DeviceController>(deviceController);
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: Scaffold(body: DashboardPage())),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('water-action-15')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('确认执行指令'), findsOneWidget);
+    expect(find.text('预计消耗 400 积分'), findsOneWidget);
+  });
 
   testWidgets('refreshes selected account label after remark changes', (
     tester,
@@ -315,6 +352,7 @@ class _DashboardDeviceGateway implements DeviceGateway {
       isOnline: true,
       dispenserType: 'ALL_FREE',
       dispenserTypeDesc: '全部免费',
+      statusDescription: '水箱水量192L',
     );
   }
 

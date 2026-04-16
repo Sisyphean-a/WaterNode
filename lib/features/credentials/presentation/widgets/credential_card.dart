@@ -44,22 +44,6 @@ class CredentialCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               children: [
-                // Start Avatar
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    credential.isValid ? Icons.person_rounded : Icons.person_off_rounded,
-                    color: statusColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                // Center Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,24 +56,18 @@ class CredentialCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _buildSubtitle(),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        _buildSubtitle(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                // End Points
+                const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -102,14 +80,20 @@ class CredentialCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         credential.isValid ? '状态有效' : '已失效',
-                        style: theme.textTheme.labelSmall?.copyWith(color: statusColor, fontSize: 10),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: statusColor,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ],
@@ -123,7 +107,9 @@ class CredentialCard extends StatelessWidget {
   }
 
   String _buildSubtitle() {
-    final remark = (credential.remark?.isNotEmpty == true) ? credential.remark! : '未命名账号';
+    final remark = (credential.remark?.isNotEmpty == true)
+        ? credential.remark!
+        : '未命名账号';
     final signState = _signInStateLabel(credential.signInState);
     return '$remark • 打卡: $signState';
   }
@@ -226,7 +212,9 @@ class _OptionsSheetState extends State<_OptionsSheet> {
             const SizedBox(height: 24),
             Text(
               '管理通行证',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -257,7 +245,9 @@ class _OptionsSheetState extends State<_OptionsSheet> {
               label: const Text('保存修改'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -267,7 +257,9 @@ class _OptionsSheetState extends State<_OptionsSheet> {
               label: const Text('复制 Token'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],

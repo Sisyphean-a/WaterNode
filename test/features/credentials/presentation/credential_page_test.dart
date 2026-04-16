@@ -32,13 +32,13 @@ void main() {
   ) async {
     await _pumpCredentialPage(tester, repository: MemoryAccountRepository());
 
-    expect(find.widgetWithText(FilledButton, '导入'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, '签到'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, '抽奖'), findsOneWidget);
+    expect(find.text('导入'), findsOneWidget);
+    expect(find.text('签到'), findsOneWidget);
+    expect(find.text('抽奖'), findsOneWidget);
     expect(find.text('全员智能签到'), findsNothing);
     expect(find.text('自动化'), findsNothing);
 
-    await tester.tap(find.widgetWithText(FilledButton, '导入'));
+    await tester.tap(find.byKey(const Key('open-token-import-dialog')));
     await tester.pumpAndSettle();
 
     expect(find.text('粘贴 Token'), findsOneWidget);
@@ -55,7 +55,7 @@ void main() {
       authGateway: _FakeAuthGateway(),
     );
 
-    await tester.tap(find.widgetWithText(FilledButton, '新增'));
+    await tester.tap(find.byKey(const Key('open-add-account-dialog')));
     await tester.pumpAndSettle();
 
     expect(find.text('新增账户'), findsOneWidget);
@@ -140,6 +140,7 @@ Future<void> _pumpCredentialPage(
     TokenPayloadParser(),
     _FakeAccountProfileGateway(),
   );
+  await controller.load();
   Get.put(controller, permanent: true);
   Get.put(
     DashboardController(controller, _FakeActivityGateway()),

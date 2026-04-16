@@ -145,6 +145,7 @@ class DeviceController extends GetxController {
         quantity: quantity,
         credential: credential,
       );
+      await _credentialController.refreshStatuses();
       _addLog(
         '${credential.mobile} 对 ${detail.name} 取水成功 '
         '${_displayVolumeLabel(quantity, config)}',
@@ -170,6 +171,15 @@ class DeviceController extends GetxController {
     } finally {
       dispatchingStationId.value = null;
     }
+  }
+
+  Future<DeviceStation> fetchStationDetail({DeviceStation? station}) async {
+    final credential = _resolveQueryCredential();
+    final targetStation = station ?? _resolveTargetStation();
+    return _deviceGateway.getStationDetail(
+      stationId: targetStation.id,
+      credential: credential,
+    );
   }
 
   void selectStationById(String stationId) {

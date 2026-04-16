@@ -172,6 +172,51 @@ void main() {
     expect(controller.logs.first.message, contains('15700000000'));
   });
 
+  test('refreshes account balance again after successful dispatch', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-query',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-query',
+        userId: 'user-query',
+        points: 3,
+        isValid: true,
+      ),
+    );
+    final credentialController = CredentialController(
+      repository,
+      _SequencedRefreshingActivityGateway(<int>[5, 1]),
+    );
+    await credentialController.load();
+    final gateway = _RecordingDeviceGateway();
+    final controller = DeviceController(credentialController, gateway);
+    controller.selectedCredential.value =
+        credentialController.credentials.single;
+    controller.selectedStation.value = const DeviceStation(
+      id: 'device-1',
+      name: '冯塘乡丁洼村',
+      status: 'ONLINE',
+      regionCode: 'in-village',
+      deviceNum: '864708065296769',
+      isOnline: true,
+      dispenserType: 'ALL_FREE',
+      dispenserTypeDesc: '全部免费',
+    );
+    controller.freeWaterConfig.value = const FreeWaterConfig(
+      id: 'config-1',
+      beanValue: 200,
+      waterVolume: 7.5,
+      dayLimit: 2,
+      isOn: true,
+    );
+
+    await controller.sendCommand(quantity: 1);
+
+    expect(credentialController.credentials.single.points, 1);
+  });
+
   test(
     'marks quota-exhausted failure as business limit and keeps switching possible',
     () async {
@@ -285,6 +330,38 @@ class _RefreshingActivityGateway implements ActivityGateway {
     return const AccountStatus(
       isValid: true,
       points: 5,
+      signInState: AccountSignInState.unknown,
+    );
+  }
+
+  @override
+  Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
+    return const <AccountBill>[];
+  }
+
+  @override
+  Future<void> luckDraw(
+    AccountCredential credential, {
+    required String townCode,
+  }) async {}
+
+  @override
+  Future<void> signIn(AccountCredential credential) async {}
+}
+
+class _SequencedRefreshingActivityGateway implements ActivityGateway {
+  _SequencedRefreshingActivityGateway(this._points);
+
+  final List<int> _points;
+  var _callCount = 0;
+
+  @override
+  Future<AccountStatus> fetchStatus(AccountCredential credential) async {
+    final index = _callCount < _points.length ? _callCount : _points.length - 1;
+    _callCount++;
+    return AccountStatus(
+      isValid: true,
+      points: _points[index],
       signInState: AccountSignInState.unknown,
     );
   }
