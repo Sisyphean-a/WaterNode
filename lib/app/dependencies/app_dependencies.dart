@@ -7,7 +7,9 @@ import 'package:waternode/features/auth/domain/models/auth_session.dart';
 import 'package:waternode/features/auth/infrastructure/auth_api.dart';
 import 'package:waternode/features/auth/infrastructure/token_payload_parser.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
+import 'package:waternode/features/credentials/domain/gateways/account_profile_gateway.dart';
 import 'package:waternode/features/credentials/domain/repositories/account_repository.dart';
+import 'package:waternode/features/credentials/infrastructure/account_profile_api.dart';
 import 'package:waternode/features/credentials/infrastructure/hive_account_repository.dart';
 import 'package:waternode/features/credentials/infrastructure/memory_account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
@@ -21,6 +23,7 @@ import 'package:waternode/features/devices/infrastructure/memory_device_gateway.
 class AppDependencies {
   const AppDependencies({
     required this.accountRepository,
+    required this.accountProfileGateway,
     required this.authGateway,
     required this.activityGateway,
     required this.deviceGateway,
@@ -28,6 +31,7 @@ class AppDependencies {
   });
 
   final AccountRepository accountRepository;
+  final AccountProfileGateway accountProfileGateway;
   final AuthGateway authGateway;
   final ActivityGateway activityGateway;
   final DeviceGateway deviceGateway;
@@ -49,6 +53,7 @@ class AppDependencies {
 
     return AppDependencies(
       accountRepository: HiveAccountRepository(box),
+      accountProfileGateway: AccountProfileApi(client, headers),
       authGateway: AuthApi(client, headers),
       activityGateway: ActivityApi(client, headers),
       deviceGateway: DeviceApi(client, headers),
@@ -71,6 +76,7 @@ class AppDependencies {
     ]);
     return AppDependencies(
       accountRepository: repository,
+      accountProfileGateway: _StubAccountProfileGateway(),
       authGateway: const _StubAuthGateway(),
       activityGateway: const _StubActivityGateway(),
       deviceGateway: const MemoryDeviceGateway(),
@@ -102,6 +108,11 @@ class _StubAuthGateway implements AuthGateway {
   Future<String> sendCode(String mobile) {
     throw UnimplementedError('测试依赖未提供 AuthGateway');
   }
+}
+
+class _StubAccountProfileGateway implements AccountProfileGateway {
+  @override
+  Future<String> fetchMobile(String token) async => '15700000000';
 }
 
 class _StubActivityGateway implements ActivityGateway {

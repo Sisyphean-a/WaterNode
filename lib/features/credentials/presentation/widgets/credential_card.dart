@@ -7,10 +7,12 @@ class CredentialCard extends StatefulWidget {
     super.key,
     required this.credential,
     required this.onSaveRemark,
+    required this.onCopyToken,
   });
 
   final AccountCredential credential;
   final Future<void> Function(String remark) onSaveRemark;
+  final Future<void> Function() onCopyToken;
 
   @override
   State<CredentialCard> createState() => _CredentialCardState();
@@ -99,6 +101,12 @@ class _CredentialCardState extends State<CredentialCard> {
                     color: statusColor,
                   ),
                 ),
+              ),
+              IconButton(
+                key: Key('copy-token-${credential.mobile}'),
+                onPressed: widget.onCopyToken,
+                tooltip: '复制 Token',
+                icon: const Icon(Icons.copy_all_rounded),
               ),
             ],
           ),

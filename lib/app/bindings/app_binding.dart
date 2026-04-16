@@ -16,6 +16,7 @@ class AppBinding extends Bindings {
     Get.put(ConsoleShellController(), permanent: true);
     Get.find<ConsoleShellController>().reset();
     Get.put(_dependencies.accountRepository, permanent: true);
+    Get.put(_dependencies.accountProfileGateway, permanent: true);
     Get.put(_dependencies.authGateway, permanent: true);
     Get.put(_dependencies.activityGateway, permanent: true);
     Get.put(_dependencies.deviceGateway, permanent: true);
@@ -25,6 +26,8 @@ class AppBinding extends Bindings {
       CredentialController(
         _dependencies.accountRepository,
         _dependencies.activityGateway,
+        _dependencies.tokenPayloadParser,
+        _dependencies.accountProfileGateway,
       ),
       permanent: true,
     );

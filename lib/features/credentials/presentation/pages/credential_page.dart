@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:waternode/app/application/console_shell_controller.dart';
 import 'package:waternode/app/presentation/widgets/workbench_section.dart';
 import 'package:waternode/app/routes/app_routes.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
 import 'package:waternode/features/credentials/presentation/widgets/credential_card.dart';
+import 'package:waternode/features/credentials/presentation/widgets/token_import_dialog.dart';
 
 class CredentialPage extends GetView<CredentialController> {
   const CredentialPage({super.key});
@@ -32,6 +34,19 @@ class CredentialPage extends GetView<CredentialController> {
                           : controller.refreshStatuses,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('刷新积分'),
+                    ),
+                    FilledButton.icon(
+                      key: const Key('open-token-import-dialog'),
+                      onPressed: controller.isImporting.value
+                          ? null
+                          : () => showDialog<void>(
+                              context: context,
+                              builder: (_) => TokenImportDialog(
+                                controller: controller,
+                              ),
+                            ),
+                      icon: const Icon(Icons.key_rounded),
+                      label: const Text('导入 Token'),
                     ),
                     FilledButton.icon(
                       key: const Key('open-auth-workspace'),
@@ -67,7 +82,7 @@ class CredentialPage extends GetView<CredentialController> {
                         Expanded(flex: 3, child: Text('账号')),
                         Expanded(flex: 3, child: Text('备注')),
                         Expanded(child: Text('积分', textAlign: TextAlign.right)),
-                        SizedBox(width: 96),
+                        SizedBox(width: 144),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -78,6 +93,7 @@ class CredentialPage extends GetView<CredentialController> {
                           credential,
                           remark: remark.trim().isEmpty ? null : remark.trim(),
                         ),
+                        onCopyToken: () => _copyToken(context, credential.token),
                       ),
                     if (controller.credentials.isEmpty)
                       const Padding(
@@ -92,5 +108,15 @@ class CredentialPage extends GetView<CredentialController> {
         ],
       ),
     );
+  }
+
+  Future<void> _copyToken(BuildContext context, String token) async {
+    await Clipboard.setData(ClipboardData(text: token));
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Token 已复制')));
   }
 }

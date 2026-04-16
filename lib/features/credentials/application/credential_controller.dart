@@ -1,19 +1,33 @@
 import 'package:get/get.dart';
+import 'package:waternode/features/auth/infrastructure/token_payload_parser.dart';
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
+import 'package:waternode/features/credentials/domain/gateways/account_profile_gateway.dart';
 import 'package:waternode/features/credentials/domain/repositories/account_repository.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
 
 const Object _noChange = Object();
 
 class CredentialController extends GetxController {
-  CredentialController(this._repository, this._activityGateway);
+  CredentialController(
+    this._repository,
+    this._activityGateway,
+    [
+      TokenPayloadParser? parser,
+      AccountProfileGateway? accountProfileGateway,
+    ]
+  ) : _parser = parser ?? TokenPayloadParser(),
+      _accountProfileGateway =
+          accountProfileGateway ?? const _UnsupportedAccountProfileGateway();
 
   final AccountRepository _repository;
   final ActivityGateway _activityGateway;
+  final TokenPayloadParser _parser;
+  final AccountProfileGateway _accountProfileGateway;
 
   final credentials = <AccountCredential>[].obs;
   final isRefreshing = false.obs;
+  final isImporting = false.obs;
   final lastError = RxnString();
   Future<void>? _refreshTask;
 
@@ -85,6 +99,37 @@ class CredentialController extends GetxController {
     }
   }
 
+  Future<void> importToken(String rawToken) async {
+    isImporting.value = true;
+    lastError.value = null;
+    try {
+      final token = rawToken.trim();
+      if (token.isEmpty) {
+        throw const FormatException('Token 不能为空');
+      }
+      final payload = _parser.parse(token);
+      final mobile = await _accountProfileGateway.fetchMobile(token);
+      await _repository.save(
+        AccountCredential(
+          mobile: mobile,
+          token: token,
+          platformType: payload.platformType,
+          deviceId: payload.deviceId,
+          userId: payload.userId,
+          points: 0,
+          isValid: true,
+          lastCheckedAt: DateTime.now(),
+        ),
+      );
+      await load();
+    } catch (error) {
+      lastError.value = error.toString();
+      rethrow;
+    } finally {
+      isImporting.value = false;
+    }
+  }
+
   Future<void> updateAccountMeta(
     AccountCredential credential, {
     Object? remark = _noChange,
@@ -101,5 +146,14 @@ class CredentialController extends GetxController {
         .map((item) => item.mobile == credential.mobile ? updated : item)
         .toList(growable: false);
     credentials.assignAll(next);
+  }
+}
+
+class _UnsupportedAccountProfileGateway implements AccountProfileGateway {
+  const _UnsupportedAccountProfileGateway();
+
+  @override
+  Future<String> fetchMobile(String token) {
+    throw UnimplementedError('导入 Token 需要提供 AccountProfileGateway');
   }
 }
