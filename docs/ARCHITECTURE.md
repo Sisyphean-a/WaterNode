@@ -16,7 +16,7 @@ WaterNode 是一个面向 Android 与 Windows 的 Flutter 内部控制台，用�
 | HTTP Client | Dio | `^5.9.0` |
 | Local Storage | Hive + hive_flutter | `^2.2.3` / `^1.1.0` |
 | Token Parsing | jwt_decoder | `^2.0.1` |
-| Typography | NotoSansSC | `fonts/noto_sans_sc/` |
+| Typography | 系统字体回退栈 | `lib/app/theme/app_theme.dart` |
 
 ## Runtime Boundaries
 
@@ -221,7 +221,7 @@ docs/
 
 | File | Responsibility |
 | --- | --- |
-| `pubspec.yaml` | 依赖、字体、Dart SDK 约束 |
+| `pubspec.yaml` | 依赖、Material 资源与 Dart SDK 约束 |
 | `analysis_options.yaml` | lint 规则 |
 | `lib/app/theme/app_theme.dart` | 全局主题、字号、圆角、输入框样式 |
 | `lib/core/network/api_endpoints.dart` | 外部接口路径常量 |
