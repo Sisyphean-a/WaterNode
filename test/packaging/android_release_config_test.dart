@@ -54,4 +54,11 @@ void main() {
     expect(pubspec.contains("family: NotoSansSC"), isFalse);
     expect(pubspec.contains('fonts/noto_sans_sc/'), isFalse);
   });
+
+  test('repository does not retain removed Noto Sans SC assets', () {
+    expect(Directory('fonts/noto_sans_sc').existsSync(), isFalse);
+    expect(File('fonts/noto_sans_sc/NotoSansCJKsc-Regular.otf').existsSync(), isFalse);
+    expect(File('fonts/noto_sans_sc/NotoSansCJKsc-Medium.otf').existsSync(), isFalse);
+    expect(File('fonts/noto_sans_sc/NotoSansCJKsc-Bold.otf').existsSync(), isFalse);
+  });
 }
