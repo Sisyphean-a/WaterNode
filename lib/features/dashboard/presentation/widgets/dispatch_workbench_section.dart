@@ -21,7 +21,7 @@ class DispatchWorkbenchSection extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Obx(
-      () => WorkbenchSection(title: '极速取水控制台', child: _buildContent(theme)),
+      () => WorkbenchSection(title: '取水控制台', child: _buildContent(theme)),
     );
   }
 

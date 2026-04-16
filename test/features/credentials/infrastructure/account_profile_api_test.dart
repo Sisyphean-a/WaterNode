@@ -43,11 +43,7 @@ void main() {
     await expectLater(
       () => api.fetchMobile(_buildToken()),
       throwsA(
-        isA<AppException>().having(
-          (error) => error.message,
-          'message',
-          'findUserInfo returned unexpected code: h009',
-        ),
+        isA<AppException>().having((error) => error.message, 'message', '登录失效'),
       ),
     );
   });

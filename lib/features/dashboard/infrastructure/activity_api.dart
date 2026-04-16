@@ -1,5 +1,7 @@
 import 'package:waternode/core/errors/app_exception.dart';
 import 'package:waternode/core/network/api_client.dart';
+import 'package:waternode/core/network/api_endpoints.dart';
+import 'package:waternode/core/network/api_response.dart';
 import 'package:waternode/core/network/dynamic_header_factory.dart';
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
@@ -16,23 +18,20 @@ class ActivityApi implements ActivityGateway {
   @override
   Future<AccountStatus> fetchStatus(AccountCredential credential) async {
     final response = await _client.get(
-      '/pay/account/coin/user',
+      ApiEndpoints.accountBalance,
       headers: _buildBalanceHeaders(credential),
       queryParameters: <String, dynamic>{
         'accountType': 'COIN',
         'userId': credential.userId,
       },
     );
-    final code = response['code'] as String?;
+    final code = ApiResponse.readCode(response);
     if (code == 'h009') {
       return const AccountStatus(isValid: false, points: 0);
     }
-    if (code != '200') {
-      throw AppException('coin/user returned unexpected code: $code');
-    }
+    ApiResponse.ensureSuccess(response, action: 'coin/user');
     final signInState = await _fetchSignInState(credential);
-    final data =
-        response['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data = ApiResponse.readDataMap(response, action: 'coin/user');
     return AccountStatus(
       isValid: true,
       points: _readBalance(data),
@@ -43,12 +42,10 @@ class ActivityApi implements ActivityGateway {
   @override
   Future<List<AccountBill>> fetchBills(AccountCredential credential) async {
     final response = await _client.get(
-      '/pay/user/accountDetail/bean/list',
+      ApiEndpoints.accountBillList,
       headers: _buildBillHeaders(credential),
     );
-    _ensureSuccess(response, 'bean/list');
-    final data =
-        response['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data = ApiResponse.readDataMap(response, action: 'bean/list');
     final content = data['content'];
     if (content is! List) {
       throw const AppException('bean/list payload missing content');
@@ -63,13 +60,13 @@ class ActivityApi implements ActivityGateway {
   @override
   Future<void> signIn(AccountCredential credential) async {
     final response = await _client.get(
-      '/marketing/userSgin/signInClick',
+      ApiEndpoints.accountSignIn,
       headers: _headerFactory.buildAuthorizedHeaders(
         token: credential.token,
         includeUserId: true,
       ),
     );
-    _ensureSuccess(response, 'signInClick');
+    ApiResponse.ensureSuccess(response, action: 'signInClick');
   }
 
   @override
@@ -78,14 +75,14 @@ class ActivityApi implements ActivityGateway {
     required String townCode,
   }) async {
     final response = await _client.get(
-      '/marketing/app/turntable/luckDraw',
+      ApiEndpoints.accountLuckDraw,
       headers: _headerFactory.buildAuthorizedHeaders(
         token: credential.token,
         includeUserId: true,
       ),
       queryParameters: <String, dynamic>{'townCode': townCode},
     );
-    _ensureSuccess(response, 'luckDraw');
+    ApiResponse.ensureSuccess(response, action: 'luckDraw');
   }
 
   Map<String, String> _buildBalanceHeaders(AccountCredential credential) {
@@ -141,22 +138,14 @@ class ActivityApi implements ActivityGateway {
     AccountCredential credential,
   ) async {
     final response = await _client.get(
-      '/marketing/userSgin/consSignDay',
+      ApiEndpoints.accountSignInState,
       headers: _buildBalanceHeaders(credential),
     );
-    final code = response['code'] as String?;
-    if (code != '200') {
+    if (ApiResponse.readCode(response) != ApiResponse.successCode) {
       return AccountSignInState.unknown;
     }
     return response['ok'] == true
         ? AccountSignInState.completed
         : AccountSignInState.available;
-  }
-
-  void _ensureSuccess(Map<String, dynamic> response, String action) {
-    final code = response['code'] as String?;
-    if (code != '200') {
-      throw AppException('$action returned unexpected code: $code');
-    }
   }
 }

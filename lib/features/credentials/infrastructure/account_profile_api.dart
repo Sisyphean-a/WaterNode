@@ -1,5 +1,7 @@
 import 'package:waternode/core/errors/app_exception.dart';
 import 'package:waternode/core/network/api_client.dart';
+import 'package:waternode/core/network/api_endpoints.dart';
+import 'package:waternode/core/network/api_response.dart';
 import 'package:waternode/core/network/dynamic_header_factory.dart';
 import 'package:waternode/features/credentials/domain/gateways/account_profile_gateway.dart';
 
@@ -12,18 +14,14 @@ class AccountProfileApi implements AccountProfileGateway {
   @override
   Future<String> fetchMobile(String token) async {
     final response = await _client.get(
-      '/ids/app/user/findUserInfo',
+      ApiEndpoints.accountProfile,
       headers: _headerFactory.buildAuthorizedHeaders(token: token),
     );
-    final code = response['code'] as String?;
-    if (code != '200') {
-      throw AppException('findUserInfo returned unexpected code: $code');
-    }
-    final data = response['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data = ApiResponse.readDataMap(response, action: 'findUserInfo');
     final mobile = data['mobile'];
     if (mobile is String && mobile.isNotEmpty) {
       return mobile;
     }
-    throw const FormatException('findUserInfo payload missing mobile');
+    throw const AppException('findUserInfo payload missing mobile');
   }
 }

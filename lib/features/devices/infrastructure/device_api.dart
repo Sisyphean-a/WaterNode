@@ -1,5 +1,7 @@
 import 'package:waternode/core/errors/app_exception.dart';
 import 'package:waternode/core/network/api_client.dart';
+import 'package:waternode/core/network/api_endpoints.dart';
+import 'package:waternode/core/network/api_response.dart';
 import 'package:waternode/core/network/dynamic_header_factory.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
@@ -22,14 +24,14 @@ class DeviceApi implements DeviceGateway {
     required AccountCredential credential,
   }) async {
     final response = await _client.get(
-      '/marketing/app/freeWaterActivity/fetchWaterByScan',
+      ApiEndpoints.freeWaterDispatch,
       headers: _buildAuthorizedHeaders(credential),
       queryParameters: <String, dynamic>{
         'deviceId': stationId,
         'num': quantity,
       },
     );
-    _ensureSuccess(response);
+    ApiResponse.ensureSuccess(response, action: 'fetchWaterByScan');
   }
 
   @override
@@ -37,10 +39,10 @@ class DeviceApi implements DeviceGateway {
     AccountCredential credential,
   ) async {
     final response = await _client.get(
-      '/marketing/app/freeWaterActivityConfig/findOneConfig',
+      ApiEndpoints.freeWaterConfig,
       headers: _buildAuthorizedHeaders(credential),
     );
-    final data = _readDataMap(response);
+    final data = ApiResponse.readDataMap(response, action: 'findOneConfig');
 
     return FreeWaterConfig(
       id: _readRequiredString(data, 'id'),
@@ -58,12 +60,15 @@ class DeviceApi implements DeviceGateway {
     required AccountCredential credential,
   }) async {
     final response = await _client.get(
-      '/marketing/app/waterDispenser/findByDeviceId',
+      ApiEndpoints.waterStationDetail,
       headers: _buildAuthorizedHeaders(credential),
       queryParameters: <String, dynamic>{'deviceId': stationId},
     );
 
-    return _mapStation(_readDataMap(response), regionCode: 'detail');
+    return _mapStation(
+      ApiResponse.readDataMap(response, action: 'findByDeviceId'),
+      regionCode: 'detail',
+    );
   }
 
   @override
@@ -75,7 +80,7 @@ class DeviceApi implements DeviceGateway {
       _resolveStationPath(regionCode),
       headers: _buildStationHeaders(credential),
     );
-    final data = _readDataMap(response);
+    final data = ApiResponse.readDataMap(response, action: 'listWaterStations');
     final content = data['content'];
     if (content is! List) {
       throw const AppException('设备列表响应缺少 content 数组');
@@ -128,33 +133,12 @@ class DeviceApi implements DeviceGateway {
     );
   }
 
-  Map<String, dynamic> _readDataMap(Map<String, dynamic> response) {
-    _ensureSuccess(response);
-    final data = response['data'];
-    if (data is Map<String, dynamic>) {
-      return data;
-    }
-    throw const AppException('响应数据不是对象结构');
-  }
-
-  void _ensureSuccess(Map<String, dynamic> response) {
-    final code = response['code']?.toString();
-    if (code == '200') {
-      return;
-    }
-    final message = response['msg'] as String?;
-    if (message != null && message.isNotEmpty) {
-      throw AppException(message);
-    }
-    throw AppException('设备接口返回异常业务码: $code');
-  }
-
   String _resolveStationPath(String regionCode) {
     switch (regionCode) {
       case 'in-village':
-        return '/marketing/app/waterDispenser/list/inVillage';
+        return ApiEndpoints.waterStationInVillage;
       case 'default-page':
-        return '/marketing/app/waterDispenser/listPage';
+        return ApiEndpoints.waterStationDefaultPage;
       default:
         throw UnsupportedError('不支持的设备列表来源: $regionCode');
     }
