@@ -1,0 +1,10 @@
+{
+  "default_max_bytes": 1048576,
+  "monitored_directories": [
+    "assets/",
+    "fonts/",
+    "android/app/src/main/res/",
+    "windows/runner/resources/"
+  ],
+  "path_overrides": {}
+}
