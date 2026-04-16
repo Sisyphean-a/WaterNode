@@ -42,6 +42,13 @@ void main() {
       ).existsSync(),
       isTrue,
     );
+    expect(
+      File(
+        'android/app/src/main/kotlin/com/example/waternode/MainActivity.kt',
+      ).existsSync(),
+      isFalse,
+      reason: '旧命名空间文件应在迁移后彻底移除，避免历史包名继续误导维护',
+    );
   });
 
   test('android signing template exists', () {

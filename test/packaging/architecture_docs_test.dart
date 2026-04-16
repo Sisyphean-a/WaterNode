@@ -52,5 +52,17 @@ void main() {
       isTrue,
     );
     expect(plan.contains('app-release.apk'), isFalse);
+    expect(
+      plan.contains(
+        '- Modify: `android/app/src/main/kotlin/com/example/waternode/MainActivity.kt`',
+      ),
+      isFalse,
+    );
+    expect(
+      plan.contains(
+        '- Delete: `android/app/src/main/kotlin/com/example/waternode/MainActivity.kt`',
+      ),
+      isTrue,
+    );
   });
 }

@@ -73,7 +73,7 @@ Expected: formatter exits 0
 - Create: `android/key.properties.example`
 - Modify: `android/app/build.gradle.kts`
 - Modify: `android/app/src/main/AndroidManifest.xml`
-- Modify: `android/app/src/main/kotlin/com/example/waternode/MainActivity.kt`
+- Delete: `android/app/src/main/kotlin/com/example/waternode/MainActivity.kt`
 - Create: `android/app/src/main/kotlin/com/waternode/app/MainActivity.kt`
 - Modify: `.gitignore`
 - Test: `test/packaging/android_release_config_test.dart`
