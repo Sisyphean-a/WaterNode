@@ -48,10 +48,11 @@
 资源组织采用“一份源定义，多平台派生”的方式：
 
 - `assets/branding/waternode_icon.svg`：可编辑的主图源文件
-- `assets/branding/waternode_icon.png`：打包主位图
+- `assets/branding/waternode_icon.png`：平台图标生成输入位图
 - `tool/generate_brand_assets.py`：根据统一图形逻辑生成 PNG、ICO 与 Android launcher 图标
 
 不依赖额外 Flutter 图标插件，避免为了图标生成修改应用运行时依赖。图标生成过程应可在本地独立重复执行。
+`assets/branding/` 只存放品牌源文件和生成输入，不作为 Flutter 运行时资源注册进安装包。
 
 ## 平台设计
 
@@ -90,14 +91,17 @@
 ### Android 打包
 
 1. 准备本地 keystore 与 `android/key.properties`
-2. 执行 `flutter build apk --release`
-3. 产出 `build/app/outputs/flutter-apk/app-release.apk`
+2. 执行 `flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android`
+3. 产出 `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`、
+   `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+4. 同步归档 `build/symbols/android/` 中的 Dart 符号文件，不随 APK 分发
 
 ### Windows 打包
 
-1. 执行 `flutter build windows --release`
+1. 执行 `flutter build windows --release --split-debug-info=build/symbols/windows`
 2. 使用 Inno Setup 编译安装脚本
 3. 产出 `dist/windows/WaterNode Setup.exe`
+4. 同步归档 `build/symbols/windows/` 中的 Dart 符号文件，不打进安装器
 
 ## 验收标准
 

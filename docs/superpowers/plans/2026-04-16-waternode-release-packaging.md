@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 WaterNode 补齐品牌资源、Android release 签名链路和 Windows 安装器，最终产出可安装的 Android APK 与 Windows Setup.exe。
+**Goal:** 为 WaterNode 补齐品牌资源、Android release 签名链路和 Windows 安装器，最终产出可安装的按 ABI 拆分 Android APK 与 Windows Setup.exe。
 
-**Architecture:** 使用仓库内统一品牌源文件和本地脚本生成平台图标；Android 直接走 Flutter release 构建并改为固定本地 keystore 签名；Windows 保持 Flutter runner 结构，仅通过 Inno Setup 从 release 目录收集文件生成安装器。
+**Architecture:** 使用仓库内统一品牌源文件和本地脚本生成平台图标；Android 走 `--split-per-abi` 与 `--split-debug-info` 的 Flutter release 构建并改为固定本地 keystore 签名；Windows 保持 Flutter runner 结构，通过 Inno Setup 从 release 目录收集文件生成安装器，同时把 Dart 符号拆到构建机目录。
 
 **Tech Stack:** Flutter 3.41、Android Gradle/Kotlin、Windows runner、Python + Pillow、Inno Setup
 
@@ -180,17 +180,19 @@ Expected: PASS
 
 **Files:**
 - Create: `docs/release-packaging.md`
-- Modify: `pubspec.yaml`
 
 - [ ] **Step 1: 准备 keystore 并生成 Android release 包**
 
-Run: `flutter build apk --release`
-Expected: exit 0 and `build/app/outputs/flutter-apk/app-release.apk` exists.
+Run: `flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android`
+Expected: exit 0 and `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`,
+`build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`,
+`build/symbols/android/` exist.
 
 - [ ] **Step 2: 生成 Windows release 目录**
 
-Run: `flutter build windows --release`
-Expected: exit 0 and `build/windows/x64/runner/Release/` exists.
+Run: `flutter build windows --release --split-debug-info=build/symbols/windows`
+Expected: exit 0 and `build/windows/x64/runner/Release/`,
+`build/symbols/windows/` exist.
 
 - [ ] **Step 3: 编译安装器**
 
@@ -201,8 +203,8 @@ Expected: exit 0 and `dist/windows/WaterNode Setup.exe` exists.
 
 ```markdown
 1. python tool/generate_brand_assets.py
-2. flutter build apk --release
-3. flutter build windows --release
+2. flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android
+3. flutter build windows --release --split-debug-info=build/symbols/windows
 4. iscc installer/windows/waternode.iss
 ```
 

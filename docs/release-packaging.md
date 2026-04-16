@@ -75,5 +75,7 @@ flutter test test/packaging
 - Android 继续使用 `--split-per-abi` 与 `--split-debug-info`
 - Android release 继续保持 `minify` / `shrinkResources` 开启
 - 仓库继续不打包已移除的 48M 中文 OTF
-- `tool/packaging_asset_budget.json` 继续以 `1 MiB` 默认预算监控会进入安装包的资源目录
+- `tool/packaging_asset_budget.json` 继续以 `1 MiB` 默认预算监控会进入安装包的资源目录；
+  Flutter 侧仅按 `pubspec.yaml` 当前实际注册的 `assets` / `fonts` 目录纳入，避免把
+  `assets/branding/` 这类未注册源文件误判为随包资源
 - Windows 安装器继续使用 `lzma2/ultra64` 并排除 `.pdb` / `.lib` / `.exp` / `.ilk`
