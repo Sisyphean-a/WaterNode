@@ -4,7 +4,7 @@
 
 ## 依赖
 
-- `flutter build windows --release`
+- `flutter build windows --release --split-debug-info=build/symbols/windows`
 - `iscc` 命令可用
 
 ## 打包
@@ -21,3 +21,4 @@ iscc installer/windows/waternode.iss
 
 - `lzma2/ultra64` 高压缩
 - 排除 `.pdb` / `.lib` / `.exp` / `.ilk` 非运行时文件
+- `build/symbols/windows/` 保留在构建机，用于发布后还原 Dart 堆栈

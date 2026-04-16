@@ -14,6 +14,17 @@ void main() {
     expect(script.contains('Excludes: "*.pdb,*.lib,*.exp,*.ilk"'), isTrue);
   });
 
+  test('windows installer readme documents split debug info build', () {
+    final readme = File('installer/windows/README.md').readAsStringSync();
+
+    expect(
+      readme.contains(
+        'flutter build windows --release --split-debug-info=build/symbols/windows',
+      ),
+      isTrue,
+    );
+  });
+
   test('runner metadata uses WaterNode branding', () {
     final rc = File('windows/runner/Runner.rc').readAsStringSync();
 

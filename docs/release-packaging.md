@@ -23,7 +23,7 @@ keytool -genkeypair -v -keystore android\keystore\waternode-release.jks -alias w
 3. 构建按 ABI 拆分的小包：
 
 ```bash
-flutter build apk --release --split-per-abi
+flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android
 ```
 
 产物：
@@ -36,13 +36,14 @@ flutter build apk --release --split-per-abi
 - Android release 已默认开启 `minify` 与 `shrinkResources`
 - 当前应用已改为系统字体栈，不再打包 48M 中文 OTF
 - 日常分发优先使用 `app-arm64-v8a-release.apk`
+- `build/symbols/android/` 里的 Dart 符号文件不要随包分发，但要和对应 APK 一起归档，便于后续还原堆栈
 
 ## Windows
 
 1. 构建 release 目录：
 
 ```bash
-flutter build windows --release
+flutter build windows --release --split-debug-info=build/symbols/windows
 ```
 
 2. 编译安装器：
@@ -59,3 +60,4 @@ iscc installer/windows/waternode.iss
 
 - 安装器使用 `lzma2/ultra64` 高压缩模式
 - 默认排除 `.pdb` / `.lib` / `.exp` / `.ilk` 等非运行时文件
+- `build/symbols/windows/` 里的 Dart 符号文件不要打进安装器，但需要和安装器版本一起留档
