@@ -149,6 +149,55 @@ void main() {
       expect(find.text('一键自动化'), findsNothing);
     },
   );
+
+  testWidgets('refreshes selected account label after remark changes', (
+    tester,
+  ) async {
+    final repository = MemoryAccountRepository(<AccountCredential>[
+      const AccountCredential(
+        mobile: '157000006427',
+        token: 'token-1',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 6,
+        isValid: true,
+      ),
+    ]);
+    final credentialController = CredentialController(
+      repository,
+      _DashboardActivityGateway(),
+    );
+    await credentialController.load();
+    final dashboardController = DashboardController(
+      credentialController,
+      _DashboardActivityGateway(),
+    );
+    final deviceController = DeviceController(
+      credentialController,
+      _DashboardDeviceGateway(),
+    );
+    await deviceController.prepareWorkbench();
+    Get.put<CredentialController>(credentialController);
+    Get.put<DashboardController>(dashboardController);
+    Get.put<DeviceController>(deviceController);
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: Scaffold(body: DashboardPage())),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('尾号6427'), findsOneWidget);
+
+    await credentialController.updateAccountMeta(
+      credentialController.credentials.single,
+      remark: '家里',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('家里'), findsOneWidget);
+    expect(find.text('尾号6427'), findsNothing);
+  });
 }
 
 class _DashboardActivityGateway implements ActivityGateway {

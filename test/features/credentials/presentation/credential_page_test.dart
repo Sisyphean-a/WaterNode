@@ -98,6 +98,33 @@ void main() {
 
     expect(copiedText, 'token-123');
   });
+
+  testWidgets('persists remark when remark input loses focus', (tester) async {
+    final repository = MemoryAccountRepository(<AccountCredential>[
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-123',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-1',
+        userId: 'user-1',
+        points: 20,
+        isValid: true,
+        signInState: AccountSignInState.completed,
+      ),
+    ]);
+
+    await _pumpCredentialPage(tester, repository: repository);
+
+    await tester.enterText(find.byType(TextField).first, '家里');
+    WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+
+    final controller = Get.find<CredentialController>();
+    expect(controller.credentials.single.remark, '家里');
+
+    final persisted = await repository.readAll();
+    expect(persisted.single.remark, '家里');
+  });
 }
 
 Future<void> _pumpCredentialPage(

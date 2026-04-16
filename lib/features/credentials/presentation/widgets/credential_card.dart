@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
@@ -20,11 +22,14 @@ class CredentialCard extends StatefulWidget {
 
 class _CredentialCardState extends State<CredentialCard> {
   late final TextEditingController _remarkController;
+  late final FocusNode _remarkFocusNode;
+  String? _pendingRemark;
 
   @override
   void initState() {
     super.initState();
     _remarkController = TextEditingController(text: widget.credential.remark);
+    _remarkFocusNode = FocusNode()..addListener(_handleRemarkFocusChange);
   }
 
   @override
@@ -37,9 +42,37 @@ class _CredentialCardState extends State<CredentialCard> {
 
   @override
   void dispose() {
+    _remarkFocusNode
+      ..removeListener(_handleRemarkFocusChange)
+      ..dispose();
     _remarkController.dispose();
     super.dispose();
   }
+
+  void _handleRemarkFocusChange() {
+    if (_remarkFocusNode.hasFocus) {
+      return;
+    }
+    unawaited(_persistRemarkIfChanged());
+  }
+
+  Future<void> _persistRemarkIfChanged() async {
+    final nextRemark = _normalizedRemark(_remarkController.text);
+    final currentRemark = _normalizedRemark(widget.credential.remark);
+    if (nextRemark == currentRemark || nextRemark == _pendingRemark) {
+      return;
+    }
+    _pendingRemark = nextRemark;
+    try {
+      await widget.onSaveRemark(_remarkController.text);
+    } finally {
+      if (_pendingRemark == nextRemark) {
+        _pendingRemark = null;
+      }
+    }
+  }
+
+  String _normalizedRemark(String? value) => value?.trim() ?? '';
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +132,7 @@ class _CredentialCardState extends State<CredentialCard> {
                 Expanded(
                   child: TextField(
                     controller: _remarkController,
+                    focusNode: _remarkFocusNode,
                     decoration: const InputDecoration(
                       hintText: '添加备注名称...',
                       isDense: true,
@@ -111,7 +145,8 @@ class _CredentialCardState extends State<CredentialCard> {
                       prefixIconConstraints: BoxConstraints(minWidth: 28),
                     ),
                     style: theme.textTheme.bodyMedium,
-                    onSubmitted: widget.onSaveRemark,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _persistRemarkIfChanged(),
                   ),
                 ),
                 IconButton(
