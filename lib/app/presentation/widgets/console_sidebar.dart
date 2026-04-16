@@ -146,9 +146,8 @@ class _SidebarItem extends StatelessWidget {
                 Expanded(
                   child: Text(
                     item.title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: theme.textTheme.labelLarge?.copyWith(
                       color: isActive ? selectedColor : null,
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ),

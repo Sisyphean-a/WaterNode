@@ -40,9 +40,7 @@ class DeviceStationCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   station.name,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
               ),
               Container(

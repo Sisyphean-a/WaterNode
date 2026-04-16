@@ -69,9 +69,7 @@ class ConsoleWorkspaceShell extends StatelessWidget {
                       children: [
                         Text(
                           activeItem.headerTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: theme.textTheme.titleMedium,
                         ),
                         Text(
                           activeItem.subtitle,

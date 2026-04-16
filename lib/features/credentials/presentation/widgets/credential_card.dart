@@ -65,9 +65,7 @@ class _CredentialCardState extends State<CredentialCard> {
                 flex: 3,
                 child: Text(
                   credential.mobile,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.labelLarge,
                 ),
               ),
               Expanded(

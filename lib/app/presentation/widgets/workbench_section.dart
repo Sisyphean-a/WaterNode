@@ -33,9 +33,7 @@ class WorkbenchSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
               ),
               if (trailing != null) ...<Widget>[trailing!],
