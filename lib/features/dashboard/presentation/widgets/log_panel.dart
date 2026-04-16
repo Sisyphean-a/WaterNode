@@ -9,39 +9,65 @@ class LogPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (logs.isEmpty) {
-      return const Center(child: Text('暂无日志'));
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.feed_outlined, size: 48, color: Theme.of(context).dividerColor),
+            const SizedBox(height: 16),
+            const Text('暂无历史操作数据', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
     }
 
-    return ListView.builder(
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       itemCount: logs.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final entry = logs[index];
         final theme = Theme.of(context);
+        final isError = entry.isError;
+        
+        final iconColor = isError ? theme.colorScheme.error : theme.colorScheme.primary;
+        final iconData = isError ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded;
+        final bgColor = isError 
+            ? theme.colorScheme.errorContainer.withValues(alpha: 0.2)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.42,
-            ),
-            borderRadius: BorderRadius.circular(10),
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: isError ? Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)) : null,
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  entry.message,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: entry.isError ? theme.colorScheme.error : null,
-                  ),
-                ),
-              ),
+              Icon(iconData, color: iconColor, size: 24),
               const SizedBox(width: 12),
-              Text(
-                _formatDateTime(entry.createdAt),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.message,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isError ? theme.colorScheme.error : theme.colorScheme.onSurface,
+                        fontWeight: isError ? FontWeight.w600 : FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatDateTime(entry.createdAt),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -57,6 +83,6 @@ class LogPanel extends StatelessWidget {
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
     final second = value.second.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day $hour:$minute:$second';
+    return '$month-$day $hour:$minute:$second';
   }
 }
