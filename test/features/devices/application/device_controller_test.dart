@@ -12,49 +12,51 @@ import 'package:waternode/features/devices/domain/models/free_water_config.dart'
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 
 void main() {
-  test('defaults to highest-point account and its saved region', () async {
-    final repository = MemoryAccountRepository();
-    await repository.save(
-      const AccountCredential(
-        mobile: '15700000000',
-        token: 'token-query',
-        platformType: 'CUSTOMER_APP',
-        deviceId: 'device-query',
-        userId: 'user-query',
-        points: 2,
-        isValid: true,
-      ),
-    );
-    await repository.save(
-      const AccountCredential(
-        mobile: '15800000000',
-        token: 'token-dispatch',
-        platformType: 'CUSTOMER_APP',
-        deviceId: 'device-dispatch',
-        userId: 'user-dispatch',
-        points: 8,
-        isValid: true,
-        defaultRegionCode: 'default-page',
-      ),
-    );
-    final credentialController = CredentialController(
-      repository,
-      _IdleActivityGateway(),
-    );
-    await credentialController.load();
-    final gateway = _RecordingDeviceGateway();
-    final controller = DeviceController(credentialController, gateway);
+  test(
+    'defaults to highest-point account and prioritizes current-village device',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 2,
+          isValid: true,
+        ),
+      );
+      await repository.save(
+        const AccountCredential(
+          mobile: '15800000000',
+          token: 'token-dispatch',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-dispatch',
+          userId: 'user-dispatch',
+          points: 8,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final gateway = _RecordingDeviceGateway();
+      final controller = DeviceController(credentialController, gateway);
 
-    await controller.prepareWorkbench();
+      await controller.prepareWorkbench();
 
-    expect(controller.freeWaterConfig.value?.waterVolume, 7.5);
-    expect(controller.stations, hasLength(1));
-    expect(controller.selectedCredential.value?.mobile, '15800000000');
-    expect(controller.selectedSource.value?.code, 'default-page');
-    expect(gateway.configCredentialMobile, '15800000000');
-    expect(gateway.stationCredentialMobile, '15800000000');
-    expect(controller.lastError.value, isNull);
-  });
+      expect(controller.freeWaterConfig.value?.waterVolume, 7.5);
+      expect(controller.stations, hasLength(2));
+      expect(controller.selectedCredential.value?.mobile, '15800000000');
+      expect(controller.selectedStation.value?.regionCode, 'in-village');
+      expect(gateway.configCredentialMobile, '15800000000');
+      expect(gateway.stationCredentialMobiles, contains('15800000000'));
+      expect(controller.lastError.value, isNull);
+    },
+  );
 
   test(
     'dispatches selected water volume with selected account and records success log',
@@ -95,15 +97,50 @@ void main() {
           (item) => item.mobile == '15800000000',
         ),
       );
-      await controller.selectSourceByCode('default-page');
+      controller.selectStationById('device-2');
 
       await controller.sendCommand(quantity: 2);
 
       expect(gateway.detailCredentialMobile, '15800000000');
       expect(gateway.dispenseCredentialMobile, '15800000000');
+      expect(gateway.dispenseStationId, 'device-2');
       expect(gateway.lastDispenseQuantity, 2);
       expect(controller.logs.first.message, contains('15800000000'));
       expect(controller.logs.first.message, contains('15L'));
+    },
+  );
+
+  test(
+    'dispatches to the station selected from the current station list',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 3,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final gateway = _MultiStationDeviceGateway();
+      final controller = DeviceController(credentialController, gateway);
+
+      await controller.prepareWorkbench();
+      controller.selectStationById('device-2');
+      await controller.sendCommand(quantity: 1);
+
+      expect(gateway.detailStationId, 'device-2');
+      expect(gateway.dispenseStationId, 'device-2');
+      expect(controller.selectedStation.value?.id, 'device-2');
+      expect(controller.logs.first.message, contains('卫贤姜含珠'));
     },
   );
 
@@ -269,9 +306,10 @@ class _RefreshingActivityGateway implements ActivityGateway {
 
 class _RecordingDeviceGateway implements DeviceGateway {
   String? configCredentialMobile;
-  String? stationCredentialMobile;
+  final List<String> stationCredentialMobiles = <String>[];
   String? detailCredentialMobile;
   String? dispenseCredentialMobile;
+  String? dispenseStationId;
   int? lastDispenseQuantity;
 
   @override
@@ -281,6 +319,7 @@ class _RecordingDeviceGateway implements DeviceGateway {
     required AccountCredential credential,
   }) async {
     dispenseCredentialMobile = credential.mobile;
+    dispenseStationId = stationId;
     lastDispenseQuantity = quantity;
   }
 
@@ -323,7 +362,22 @@ class _RecordingDeviceGateway implements DeviceGateway {
     required String regionCode,
     required AccountCredential credential,
   }) async {
-    stationCredentialMobile = credential.mobile;
+    stationCredentialMobiles.add(credential.mobile);
+    if (regionCode == 'default-page') {
+      return const <DeviceStation>[
+        DeviceStation(
+          id: 'device-2',
+          name: '卫贤姜含珠',
+          status: 'ONLINE',
+          regionCode: 'default-page',
+          deviceNum: '865096063551420',
+          address: '卫贤镇姜含珠',
+          isOnline: true,
+          dispenserType: 'ALL_FREE',
+          dispenserTypeDesc: '全部免费',
+        ),
+      ];
+    }
     return const <DeviceStation>[
       DeviceStation(
         id: 'device-1',
@@ -348,5 +402,74 @@ class _QuotaFailureDeviceGateway extends _RecordingDeviceGateway {
     required AccountCredential credential,
   }) {
     throw StateError('超出每日取水【2】次数,请明日再试');
+  }
+}
+
+class _MultiStationDeviceGateway extends _RecordingDeviceGateway {
+  String? detailStationId;
+
+  @override
+  Future<void> dispenseWater({
+    required String stationId,
+    required int quantity,
+    required AccountCredential credential,
+  }) async {
+    dispenseStationId = stationId;
+    await super.dispenseWater(
+      stationId: stationId,
+      quantity: quantity,
+      credential: credential,
+    );
+  }
+
+  @override
+  Future<DeviceStation> getStationDetail({
+    required String stationId,
+    required AccountCredential credential,
+  }) async {
+    detailStationId = stationId;
+    if (stationId == 'device-2') {
+      return const DeviceStation(
+        id: 'device-2',
+        name: '卫贤姜含珠',
+        status: 'ONLINE',
+        regionCode: 'in-village',
+        deviceNum: '865096063551420',
+        isOnline: true,
+        dispenserType: 'ALL_FREE',
+        dispenserTypeDesc: '全部免费',
+      );
+    }
+    return super.getStationDetail(stationId: stationId, credential: credential);
+  }
+
+  @override
+  Future<List<DeviceStation>> getWaterStations({
+    required String regionCode,
+    required AccountCredential credential,
+  }) async {
+    stationCredentialMobiles.add(credential.mobile);
+    return const <DeviceStation>[
+      DeviceStation(
+        id: 'device-1',
+        name: '冯塘乡丁洼村',
+        status: 'ONLINE',
+        regionCode: 'in-village',
+        deviceNum: '864708065296769',
+        isOnline: true,
+        dispenserType: 'ALL_FREE',
+        dispenserTypeDesc: '全部免费',
+      ),
+      DeviceStation(
+        id: 'device-2',
+        name: '卫贤姜含珠',
+        status: 'ONLINE',
+        regionCode: 'in-village',
+        deviceNum: '865096063551420',
+        isOnline: true,
+        dispenserType: 'ALL_FREE',
+        dispenserTypeDesc: '全部免费',
+      ),
+    ];
   }
 }

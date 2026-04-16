@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:waternode/app/application/console_shell_controller.dart';
+import 'package:waternode/features/auth/application/auth_controller.dart';
+import 'package:waternode/features/auth/domain/gateways/auth_gateway.dart';
+import 'package:waternode/features/auth/domain/models/auth_session.dart';
 import 'package:waternode/features/auth/infrastructure/token_payload_parser.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
 import 'package:waternode/features/credentials/domain/gateways/account_profile_gateway.dart';
@@ -10,6 +13,7 @@ import 'package:waternode/features/credentials/domain/models/account_credential.
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 import 'package:waternode/features/credentials/infrastructure/memory_account_repository.dart';
 import 'package:waternode/features/credentials/presentation/pages/credential_page.dart';
+import 'package:waternode/features/dashboard/application/dashboard_controller.dart';
 import 'package:waternode/features/dashboard/domain/gateways/activity_gateway.dart';
 import 'package:waternode/features/dashboard/domain/models/account_bill.dart';
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
@@ -23,19 +27,43 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
-  testWidgets('shows token import entry on credential page', (tester) async {
-    await _pumpCredentialPage(
-      tester,
-      repository: MemoryAccountRepository(),
-    );
+  testWidgets('shows import entry and in-page automation actions', (
+    tester,
+  ) async {
+    await _pumpCredentialPage(tester, repository: MemoryAccountRepository());
 
-    expect(find.widgetWithText(FilledButton, '导入 Token'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '导入'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '签到'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '抽奖'), findsOneWidget);
+    expect(find.text('全员智能签到'), findsNothing);
+    expect(find.text('自动化'), findsNothing);
 
-    await tester.tap(find.widgetWithText(FilledButton, '导入 Token'));
+    await tester.tap(find.widgetWithText(FilledButton, '导入'));
     await tester.pumpAndSettle();
 
     expect(find.text('粘贴 Token'), findsOneWidget);
     expect(find.byKey(const Key('import-token-input')), findsOneWidget);
+  });
+
+  testWidgets('opens add-account dialog instead of navigating to auth page', (
+    tester,
+  ) async {
+    final repository = MemoryAccountRepository();
+    await _pumpCredentialPage(
+      tester,
+      repository: repository,
+      authGateway: _FakeAuthGateway(),
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, '新增'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('新增账户'), findsOneWidget);
+    expect(find.text('手机号'), findsOneWidget);
+    expect(find.text('验证码'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '发送'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '登录'), findsOneWidget);
+    expect(find.text('登录授权'), findsNothing);
   });
 
   testWidgets('copies token to clipboard from credential card', (tester) async {
@@ -43,8 +71,8 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
           if (call.method == 'Clipboard.setData') {
-            copiedText = (call.arguments as Map<dynamic, dynamic>)['text']
-                as String?;
+            copiedText =
+                (call.arguments as Map<dynamic, dynamic>)['text'] as String?;
           }
           return null;
         });
@@ -75,6 +103,7 @@ void main() {
 Future<void> _pumpCredentialPage(
   WidgetTester tester, {
   required MemoryAccountRepository repository,
+  AuthGateway? authGateway,
 }) async {
   Get.testMode = true;
   Get.put(ConsoleShellController(), permanent: true);
@@ -85,11 +114,22 @@ Future<void> _pumpCredentialPage(
     _FakeAccountProfileGateway(),
   );
   Get.put(controller, permanent: true);
+  Get.put(
+    DashboardController(controller, _FakeActivityGateway()),
+    permanent: true,
+  );
+  Get.put(
+    AuthController(
+      authGateway ?? _FakeAuthGateway(),
+      repository,
+      TokenPayloadParser(),
+      onCredentialSaved: controller.load,
+    ),
+    permanent: true,
+  );
 
   await tester.pumpWidget(
-    GetMaterialApp(
-      home: Scaffold(body: CredentialPage()),
-    ),
+    GetMaterialApp(home: Scaffold(body: CredentialPage())),
   );
   await tester.pumpAndSettle();
 }
@@ -122,4 +162,25 @@ class _FakeActivityGateway implements ActivityGateway {
 class _FakeAccountProfileGateway implements AccountProfileGateway {
   @override
   Future<String> fetchMobile(String token) async => '15700000000';
+}
+
+class _FakeAuthGateway implements AuthGateway {
+  @override
+  Future<AuthSession> login({
+    required String mobile,
+    required String smsCode,
+    required String smsCodeId,
+  }) async {
+    return AuthSession(
+      mobile: mobile,
+      token:
+          'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.'
+          'eyJwbGF0Zm9ybVR5cGUiOiJDVVNUT01FUl9BUF'
+          'AiLCJkZXZpY2VJZCI6ImRldmljZS0xIiwidXNlcklkIjoidXNlci0xIn0.'
+          'signature',
+    );
+  }
+
+  @override
+  Future<String> sendCode(String mobile) async => 'sms-id-1';
 }

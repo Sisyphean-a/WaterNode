@@ -39,6 +39,7 @@ class TaskCenterPage extends GetView<DashboardController> {
                 DropdownButtonFormField<String>(
                   key: const Key('bill-account-select'),
                   initialValue: controller.selectedBillAccountMobile.value,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: '账单账号'),
                   items: controller.validCredentials
                       .map(

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:waternode/app/routes/app_routes.dart';
 
 class ConsoleNavigationCatalog {
+  static const homeRoute = AppRoutes.dashboard;
+  static const logsRoute = AppRoutes.logs;
+  static const credentialsRoute = AppRoutes.credentials;
+
   static const groups = <ConsoleNavigationGroup>[
     ConsoleNavigationGroup(
       title: '工作台',
@@ -10,7 +14,7 @@ class ConsoleNavigationCatalog {
           route: AppRoutes.dashboard,
           title: '首页工作台',
           headerTitle: '首页工作台',
-          subtitle: '取水入口、核心统计与批量操作',
+          subtitle: '取水入口与核心统计',
           groupTitle: '工作台',
           icon: Icons.space_dashboard_rounded,
         ),
@@ -34,14 +38,6 @@ class ConsoleNavigationCatalog {
           subtitle: '账号备注、积分与签到状态',
           groupTitle: '账号',
           icon: Icons.badge_rounded,
-        ),
-        ConsoleNavigationItem(
-          route: AppRoutes.auth,
-          title: '登录授权',
-          headerTitle: '登录授权',
-          subtitle: '新增或更新账号',
-          groupTitle: '账号',
-          icon: Icons.login_rounded,
         ),
       ],
     ),

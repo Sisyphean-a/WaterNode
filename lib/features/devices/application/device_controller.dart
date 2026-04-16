@@ -15,11 +15,12 @@ class DeviceController extends GetxController {
 
   final sources = <RegionOption>[
     const RegionOption(code: 'in-village', name: '当前村设备'),
-    const RegionOption(code: 'default-page', name: '默认分页设备'),
+    const RegionOption(code: 'default-page', name: '更多设备列表'),
   ].obs;
 
   final selectedSource = Rxn<RegionOption>();
   final selectedCredential = Rxn<AccountCredential>();
+  final selectedStation = Rxn<DeviceStation>();
   final freeWaterConfig = Rxn<FreeWaterConfig>();
   final stations = <DeviceStation>[].obs;
   final logs = <TaskLogEntry>[].obs;
@@ -89,13 +90,12 @@ class DeviceController extends GetxController {
   }
 
   Future<void> loadStations() async {
-    final source = selectedSource.value ?? sources.firstOrNull;
-    if (source == null) {
+    if (sources.isEmpty) {
       stations.clear();
+      selectedStation.value = null;
       freeWaterConfig.value = null;
       return;
     }
-    selectedSource.value = source;
 
     isLoading.value = true;
     lastError.value = null;
@@ -107,15 +107,19 @@ class DeviceController extends GetxController {
       if (!config.isOn) {
         throw StateError('免费接水活动未开启');
       }
-      final loadedStations = await _deviceGateway.getWaterStations(
-        regionCode: source.code,
-        credential: credential,
+      final preferredSource = selectedSource.value ?? sources.first;
+      selectedSource.value = preferredSource;
+      final loadedStations = await _loadAllStations(
+        credential,
+        preferredSourceCode: preferredSource.code,
       );
       freeWaterConfig.value = config;
       stations.assignAll(loadedStations);
+      _restoreSelectedStation();
     } catch (error) {
       lastError.value = error.toString();
       stations.clear();
+      selectedStation.value = null;
       freeWaterConfig.value = null;
       rethrow;
     } finally {
@@ -168,13 +172,16 @@ class DeviceController extends GetxController {
     }
   }
 
+  void selectStationById(String stationId) {
+    final station = stations.firstWhereOrNull((item) => item.id == stationId);
+    if (station == null) {
+      throw StateError('没有找到设备 $stationId');
+    }
+    selectedStation.value = station;
+  }
+
   Future<void> _selectDefaultSource(AccountCredential credential) async {
-    final defaultSource =
-        sources.firstWhereOrNull(
-          (item) => item.code == credential.defaultRegionCode,
-        ) ??
-        sources.first;
-    selectedSource.value = defaultSource;
+    selectedSource.value = sources.firstOrNull;
   }
 
   AccountCredential _resolveDefaultCredential() {
@@ -202,6 +209,10 @@ class DeviceController extends GetxController {
   }
 
   DeviceStation _resolveTargetStation() {
+    final selected = selectedStation.value;
+    if (selected != null) {
+      return selected;
+    }
     final onlineStation = stations.firstWhereOrNull((item) => item.isOnline);
     return onlineStation ??
         stations.firstOrNull ??
@@ -224,5 +235,92 @@ class DeviceController extends GetxController {
         isError: isError,
       ),
     );
+  }
+
+  void _restoreSelectedStation() {
+    final currentStationId = selectedStation.value?.id;
+    final restoredStation = stations.firstWhereOrNull(
+      (item) => item.id == currentStationId,
+    );
+    selectedStation.value =
+        restoredStation ??
+        _defaultStation(preferredRegionCode: selectedSource.value?.code);
+  }
+
+  DeviceStation? _defaultStation({String? preferredRegionCode}) {
+    final preferredOnline = stations.firstWhereOrNull(
+      (item) => item.regionCode == preferredRegionCode && item.isOnline,
+    );
+    if (preferredOnline != null) {
+      return preferredOnline;
+    }
+    final preferredAny = stations.firstWhereOrNull(
+      (item) => item.regionCode == preferredRegionCode,
+    );
+    if (preferredAny != null) {
+      return preferredAny;
+    }
+    return stations.firstWhereOrNull((item) => item.isOnline) ??
+        stations.firstOrNull;
+  }
+
+  Future<List<DeviceStation>> _loadAllStations(
+    AccountCredential credential, {
+    required String preferredSourceCode,
+  }) async {
+    final mergedStations = <String, DeviceStation>{};
+    for (final source in sources) {
+      final sourceStations = await _deviceGateway.getWaterStations(
+        regionCode: source.code,
+        credential: credential,
+      );
+      for (final station in sourceStations) {
+        mergedStations.putIfAbsent(station.id, () => station);
+      }
+    }
+    final stationsList = mergedStations.values.toList(growable: false);
+    stationsList.sort(
+      (left, right) => _compareStations(
+        left,
+        right,
+        preferredSourceCode: preferredSourceCode,
+      ),
+    );
+    return stationsList;
+  }
+
+  int _compareStations(
+    DeviceStation left,
+    DeviceStation right, {
+    required String preferredSourceCode,
+  }) {
+    final leftPriority = _stationPriority(
+      left,
+      preferredSourceCode: preferredSourceCode,
+    );
+    final rightPriority = _stationPriority(
+      right,
+      preferredSourceCode: preferredSourceCode,
+    );
+    if (leftPriority != rightPriority) {
+      return leftPriority.compareTo(rightPriority);
+    }
+    return left.name.compareTo(right.name);
+  }
+
+  int _stationPriority(
+    DeviceStation station, {
+    required String preferredSourceCode,
+  }) {
+    if (station.regionCode == preferredSourceCode && station.isOnline) {
+      return 0;
+    }
+    if (station.regionCode == preferredSourceCode) {
+      return 1;
+    }
+    if (station.isOnline) {
+      return 2;
+    }
+    return 3;
   }
 }

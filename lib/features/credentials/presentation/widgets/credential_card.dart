@@ -53,87 +53,43 @@ class _CredentialCardState extends State<CredentialCard> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
             color: theme.shadowColor.withValues(alpha: 0.02),
             blurRadius: 12,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  foregroundColor: theme.colorScheme.onPrimaryContainer,
-                  child: const Icon(Icons.person_rounded),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 260;
+                final identity = _CredentialIdentity(
+                  credential: credential,
+                  statusColor: statusColor,
+                );
+                final points = _CredentialPoints(credential: credential);
+
+                if (isCompact) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        credential.mobile,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              credential.isValid ? '状态有效' : '已失效',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '打卡：${_signInStateLabel(credential.signInState)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [identity, const SizedBox(height: 12), points],
+                  );
+                }
+
+                return Row(
                   children: [
-                    Text(
-                      '积分余额',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${credential.points}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
+                    Expanded(child: identity),
+                    const SizedBox(width: 12),
+                    points,
                   ],
-                ),
-              ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             Divider(color: theme.dividerColor.withValues(alpha: 0.05)),
@@ -172,6 +128,58 @@ class _CredentialCardState extends State<CredentialCard> {
       ),
     );
   }
+}
+
+class _CredentialIdentity extends StatelessWidget {
+  const _CredentialIdentity({
+    required this.credential,
+    required this.statusColor,
+  });
+
+  final AccountCredential credential;
+  final Color statusColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          credential.mobile,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                credential.isValid ? '状态有效' : '已失效',
+                style: theme.textTheme.labelSmall?.copyWith(color: statusColor),
+              ),
+            ),
+            Text(
+              '打卡：${_signInStateLabel(credential.signInState)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   String _signInStateLabel(AccountSignInState state) {
     switch (state) {
@@ -186,5 +194,36 @@ class _CredentialCardState extends State<CredentialCard> {
       case AccountSignInState.unknown:
         return '未知';
     }
+  }
+}
+
+class _CredentialPoints extends StatelessWidget {
+  const _CredentialPoints({required this.credential});
+
+  final AccountCredential credential;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          '积分余额',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '${credential.points}',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ],
+    );
   }
 }

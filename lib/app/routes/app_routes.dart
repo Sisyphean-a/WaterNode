@@ -4,5 +4,5 @@ abstract final class AppRoutes {
   static const credentials = '/credentials';
   static const auth = '/auth';
 
-  static const workbenchRoutes = <String>[dashboard, logs, credentials, auth];
+  static const workbenchRoutes = <String>[dashboard, logs, credentials];
 }

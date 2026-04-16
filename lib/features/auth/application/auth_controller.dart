@@ -22,6 +22,11 @@ class AuthController extends GetxController {
   final smsCodeId = ''.obs;
   final lastError = RxnString();
 
+  void resetLoginState() {
+    smsCodeId.value = '';
+    lastError.value = null;
+  }
+
   Future<void> sendCode(String mobile) async {
     isSendingCode.value = true;
     lastError.value = null;
