@@ -64,13 +64,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('🪙 账单核对'), findsOneWidget);
+    expect(find.text('用户签到'), findsOneWidget);
+    expect(find.text('+70'), findsOneWidget);
+    expect(find.textContaining('04-15 05:26'), findsOneWidget);
+    expect(find.text('当前余量: 10495'), findsOneWidget);
+    expect(find.text('签到奖励'), findsOneWidget);
+
+    await tester.tap(find.text('💧 取水历史'));
+    await tester.pumpAndSettle();
+
     expect(
       find.text('15700000000 对 冯塘乡丁洼村 取水失败: 当前账号当日取水额度已耗尽'),
       findsOneWidget,
     );
-    expect(find.textContaining('2026-04-15 19:43'), findsWidgets);
-    expect(find.textContaining('2026-04-15 05:26'), findsOneWidget);
-    expect(find.text('用户签到 · 收入'), findsOneWidget);
+    expect(find.textContaining('04-15 19:43:46'), findsOneWidget);
   });
 }
 

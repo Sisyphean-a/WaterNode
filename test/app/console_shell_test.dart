@@ -25,7 +25,9 @@ void main() {
 
     expect(Get.currentRoute, AppRoutes.dashboard);
     expect(find.text('结果追踪'), findsWidgets);
-    expect(find.text('最近操作记录'), findsOneWidget);
+    expect(find.text('🪙 账单核对'), findsOneWidget);
+    expect(find.text('💧 取水历史'), findsOneWidget);
+    expect(find.text('🤖 系统日志'), findsOneWidget);
   });
 
   testWidgets('shows water workbench and batch actions on home page', (
@@ -38,9 +40,10 @@ void main() {
 
     expect(find.text('有效账号数'), findsOneWidget);
     expect(find.text('总可用积分'), findsOneWidget);
-    expect(find.text('指派账户'), findsOneWidget);
+    expect(find.text('取水控制台'), findsOneWidget);
+    expect(find.text('当 前 账 号'), findsOneWidget);
     expect(find.text('设备列表'), findsNothing);
-    expect(find.text('设备终端'), findsOneWidget);
+    expect(find.text('目标水站终端'), findsOneWidget);
     expect(find.byKey(const Key('workbench-source-select')), findsNothing);
     expect(find.textContaining('目标：'), findsNothing);
     expect(find.text('7.5L'), findsOneWidget);
@@ -72,11 +75,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('账号管理'), findsWidgets);
-    expect(find.text('刷新'), findsOneWidget);
-    expect(find.text('导入'), findsOneWidget);
-    expect(find.text('新增'), findsOneWidget);
-    expect(find.text('签到'), findsOneWidget);
-    expect(find.text('抽奖'), findsOneWidget);
+    expect(find.byTooltip('刷新数据'), findsOneWidget);
+    expect(find.byTooltip('批量签到'), findsOneWidget);
+    expect(find.byTooltip('批量抽奖'), findsOneWidget);
+    expect(find.text('添加'), findsOneWidget);
     expect(find.text('自动化'), findsNothing);
     expect(find.text('您的通行证'), findsOneWidget);
     expect(find.text('登录授权'), findsNothing);

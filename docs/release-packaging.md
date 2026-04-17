@@ -40,6 +40,39 @@ flutter build apk --release --split-per-abi --split-debug-info=build/symbols/and
 - `app-x86_64-release.apk` 主要用于 x86_64 设备或模拟器验证，归档时也应一并保留
 - `build/symbols/android/` 里的 Dart 符号文件不要随包分发，但要和对应 APK 一起归档，便于后续还原堆栈
 
+## GitHub Actions 自动发布 Android
+
+GitHub Actions 工作流位于 `.github/workflows/android-release.yml`，会在推送任意 tag 时自动：
+
+- 从 Secrets 恢复正式签名 keystore
+- 生成临时 `android/key.properties`
+- 执行 `flutter test test/packaging`
+- 执行 `flutter build apk --release --split-per-abi --split-debug-info=build/symbols/android`
+- 创建公开 GitHub Release 并自动生成发布说明
+- 上传 3 个已签名 APK
+
+需要在仓库 Secrets 中配置：
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+本地可用 PowerShell 生成 `ANDROID_KEYSTORE_BASE64`：
+
+```powershell
+[Convert]::ToBase64String(
+  [IO.File]::ReadAllBytes('android\keystore\waternode-release.jks')
+)
+```
+
+Secrets 配好后，推送任意 tag 即可触发自动发布：
+
+```bash
+git tag any-tag-name
+git push origin any-tag-name
+```
+
 ## Windows
 
 1. 构建 release 目录：
