@@ -32,13 +32,20 @@ void main() {
   ) async {
     await _pumpCredentialPage(tester, repository: MemoryAccountRepository());
 
-    expect(find.text('导入'), findsOneWidget);
-    expect(find.text('签到'), findsOneWidget);
-    expect(find.text('抽奖'), findsOneWidget);
+    expect(find.byTooltip('批量签到'), findsOneWidget);
+    expect(find.byTooltip('批量抽奖'), findsOneWidget);
+    expect(find.text('添加'), findsOneWidget);
     expect(find.text('全员智能签到'), findsNothing);
     expect(find.text('自动化'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('open-token-import-dialog')));
+    await tester.tap(find.widgetWithText(FilledButton, '添加'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('添加账号'), findsOneWidget);
+    expect(find.text('手动登录'), findsOneWidget);
+    expect(find.text('导入 Token'), findsOneWidget);
+
+    await tester.tap(find.text('导入 Token'));
     await tester.pumpAndSettle();
 
     expect(find.text('粘贴 Token'), findsOneWidget);
@@ -55,7 +62,10 @@ void main() {
       authGateway: _FakeAuthGateway(),
     );
 
-    await tester.tap(find.byKey(const Key('open-add-account-dialog')));
+    await tester.tap(find.widgetWithText(FilledButton, '添加'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('手动登录'));
     await tester.pumpAndSettle();
 
     expect(find.text('新增账户'), findsOneWidget);
@@ -93,7 +103,10 @@ void main() {
       ]),
     );
 
-    await tester.tap(find.byKey(const Key('copy-token-15700000000')));
+    await tester.tap(find.text('15700000000'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '复制 Token'));
     await tester.pump();
 
     expect(copiedText, 'token-123');
@@ -115,8 +128,11 @@ void main() {
 
     await _pumpCredentialPage(tester, repository: repository);
 
+    await tester.tap(find.text('15700000000'));
+    await tester.pumpAndSettle();
+
     await tester.enterText(find.byType(TextField).first, '家里');
-    WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+    await tester.tap(find.widgetWithText(FilledButton, '保存修改'));
     await tester.pumpAndSettle();
 
     final controller = Get.find<CredentialController>();

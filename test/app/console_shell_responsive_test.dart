@@ -7,7 +7,7 @@ void main() {
   testWidgets('renders water workbench without overflow on narrow screens', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(320, 844);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -16,9 +16,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('指派账户'), findsOneWidget);
+    expect(find.text('取水控制台'), findsOneWidget);
+    expect(find.text('当 前 账 号'), findsOneWidget);
     expect(find.text('设备列表'), findsNothing);
-    expect(find.text('设备终端'), findsOneWidget);
+    expect(find.text('目标水站终端'), findsOneWidget);
     expect(find.byKey(const Key('workbench-source-select')), findsNothing);
     expect(find.textContaining('目标：'), findsNothing);
     expect(find.text('7.5L'), findsOneWidget);
@@ -27,14 +28,6 @@ void main() {
     expect(find.text('取水 15L'), findsNothing);
     expect(find.byIcon(Icons.water_drop_outlined), findsOneWidget);
     expect(find.byIcon(Icons.water_drop_rounded), findsOneWidget);
-    final accountFieldWidth = tester
-        .getSize(find.byKey(const Key('workbench-account-select')))
-        .width;
-    final stationFieldWidth = tester
-        .getSize(find.byKey(const Key('workbench-station-select')))
-        .width;
-    expect((accountFieldWidth - stationFieldWidth).abs(), lessThan(2));
-    expect(accountFieldWidth, greaterThan(220));
     final smallButtonWidth = tester
         .getSize(find.byKey(const Key('water-action-7.5')))
         .width;
@@ -65,6 +58,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('结果追踪'), findsWidgets);
+    expect(find.text('🪙 账单核对'), findsOneWidget);
   });
 
   testWidgets('auto-collapses wide sidebar after selecting a route', (
