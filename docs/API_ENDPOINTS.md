@@ -55,7 +55,7 @@ https://gateway.exiaokang.cn
 | ------------------------------ | ----------------------------------------------- |
 | APPLETS 查询积分/账单/签到状态 | `xweb_xhr: 1`、`Content-Type: application/json` |
 | 设备列表查询                   | `page-size: 10`、`page-num: 0`                  |
-| 账单查询                       | `Page-Num: 1`、`Page-Size: 10`                  |
+| 账单查询                       | `Page-Num: 0`、`Page-Size: 10`                  |
 
 ## Endpoint Index
 
@@ -183,7 +183,7 @@ townCode=<string>
 - Extra headers:
 
 ```text
-Page-Num: 1
+Page-Num: 0
 Page-Size: 10
 ```
 

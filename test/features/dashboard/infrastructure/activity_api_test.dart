@@ -181,7 +181,7 @@ void main() {
 
     expect(client.lastGetPath, '/pay/user/accountDetail/bean/list');
     expect(client.lastHeaders?['User-Id'], 'user-bill');
-    expect(client.lastHeaders?['Page-Num'], '1');
+    expect(client.lastHeaders?['Page-Num'], '0');
     expect(client.lastHeaders?['Page-Size'], '10');
     expect(bills, hasLength(2));
     expect(bills.first.billType, 'SCAN_FETCH_WATER');

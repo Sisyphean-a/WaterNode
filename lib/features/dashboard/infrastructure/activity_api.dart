@@ -12,6 +12,9 @@ import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 class ActivityApi implements ActivityGateway {
   ActivityApi(this._client, this._headerFactory);
 
+  static const _billPageNum = '0';
+  static const _billPageSize = '10';
+
   final ApiClient _client;
   final DynamicHeaderFactory _headerFactory;
 
@@ -102,7 +105,11 @@ class ActivityApi implements ActivityGateway {
 
   Map<String, String> _buildBillHeaders(AccountCredential credential) {
     final headers = _buildBalanceHeaders(credential);
-    return <String, String>{...headers, 'Page-Num': '1', 'Page-Size': '10'};
+    return <String, String>{
+      ...headers,
+      'Page-Num': _billPageNum,
+      'Page-Size': _billPageSize,
+    };
   }
 
   int _readBalance(Map<String, dynamic> data) {
