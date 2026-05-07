@@ -15,6 +15,7 @@ import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
+import 'package:waternode/features/devices/infrastructure/memory_device_station_cache_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,8 +59,13 @@ void main() {
         _DashboardActivityGateway(),
       );
       final gateway = _DashboardDeviceGateway();
-      final deviceController = DeviceController(credentialController, gateway);
+      final deviceController = DeviceController(
+        credentialController,
+        gateway,
+        MemoryDeviceStationCacheRepository(),
+      );
       await deviceController.prepareWorkbench();
+      await deviceController.refreshStations();
       Get.put<CredentialController>(credentialController);
       Get.put<DashboardController>(dashboardController);
       Get.put<DeviceController>(deviceController);
@@ -105,8 +111,13 @@ void main() {
         _DashboardActivityGateway(),
       );
       final gateway = _DashboardDeviceGateway();
-      final deviceController = DeviceController(credentialController, gateway);
+      final deviceController = DeviceController(
+        credentialController,
+        gateway,
+        MemoryDeviceStationCacheRepository(),
+      );
       await deviceController.prepareWorkbench();
+      await deviceController.refreshStations();
       Get.put<CredentialController>(credentialController);
       Get.put<DashboardController>(dashboardController);
       Get.put<DeviceController>(deviceController);
@@ -172,8 +183,13 @@ void main() {
       _DashboardActivityGateway(),
     );
     final gateway = _DashboardDeviceGateway();
-    final deviceController = DeviceController(credentialController, gateway);
+    final deviceController = DeviceController(
+      credentialController,
+      gateway,
+      MemoryDeviceStationCacheRepository(),
+    );
     await deviceController.prepareWorkbench();
+    await deviceController.refreshStations();
     Get.put<CredentialController>(credentialController);
     Get.put<DashboardController>(dashboardController);
     Get.put<DeviceController>(deviceController);
@@ -216,8 +232,10 @@ void main() {
     final deviceController = DeviceController(
       credentialController,
       _DashboardDeviceGateway(),
+      MemoryDeviceStationCacheRepository(),
     );
     await deviceController.prepareWorkbench();
+    await deviceController.refreshStations();
     Get.put<CredentialController>(credentialController);
     Get.put<DashboardController>(dashboardController);
     Get.put<DeviceController>(deviceController);
@@ -269,8 +287,10 @@ void main() {
     final deviceController = DeviceController(
       credentialController,
       _DashboardDeviceGateway(),
+      MemoryDeviceStationCacheRepository(),
     );
     await deviceController.prepareWorkbench();
+    await deviceController.refreshStations();
     Get.put<CredentialController>(credentialController);
     Get.put<DashboardController>(dashboardController);
     Get.put<DeviceController>(deviceController);
@@ -286,6 +306,76 @@ void main() {
     expect(workbenchRect.left, greaterThan(100));
     expect(workbenchRect.right, lessThan(1500));
   });
+
+  testWidgets(
+    'filters stations inside selector sheet and resets query when reopened',
+    (tester) async {
+      final repository = MemoryAccountRepository(<AccountCredential>[
+        const AccountCredential(
+          mobile: '157000006427',
+          token: 'token-1',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-1',
+          userId: 'user-1',
+          points: 6,
+          isValid: true,
+        ),
+      ]);
+      final credentialController = CredentialController(
+        repository,
+        _DashboardActivityGateway(),
+      );
+      await credentialController.load();
+      final dashboardController = DashboardController(
+        credentialController,
+        _DashboardActivityGateway(),
+      );
+      final deviceController = DeviceController(
+        credentialController,
+        _StationSearchDeviceGateway(),
+        MemoryDeviceStationCacheRepository(),
+      );
+      await deviceController.prepareWorkbench();
+      await deviceController.refreshStations();
+      Get.put<CredentialController>(credentialController);
+      Get.put<DashboardController>(dashboardController);
+      Get.put<DeviceController>(deviceController);
+
+      await tester.pumpWidget(
+        const GetMaterialApp(home: Scaffold(body: DashboardPage())),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('目标水站终端'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('搜索设备名'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, '卫贤姜含珠'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, '乡政府后院'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '姜含');
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(ListTile, '卫贤姜含珠'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, '乡政府后院'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '不存在');
+      await tester.pumpAndSettle();
+
+      expect(find.text('没有匹配的设备'), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(DispatchWorkbenchSection))).pop();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('目标水站终端'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('搜索设备名'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, '卫贤姜含珠'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, '乡政府后院'), findsOneWidget);
+      expect(find.text('没有匹配的设备'), findsNothing);
+    },
+  );
 }
 
 class _DashboardActivityGateway implements ActivityGateway {
@@ -381,6 +471,51 @@ class _DashboardDeviceGateway implements DeviceGateway {
         isOnline: true,
         dispenserType: 'ALL_FREE',
         dispenserTypeDesc: '全部免费',
+      ),
+    ];
+  }
+}
+
+class _StationSearchDeviceGateway extends _DashboardDeviceGateway {
+  @override
+  Future<List<DeviceStation>> getWaterStations({
+    required String regionCode,
+    required AccountCredential credential,
+  }) async {
+    if (regionCode == 'in-village') {
+      return const <DeviceStation>[
+        DeviceStation(
+          id: 'anchor-station',
+          name: '乡政府后院',
+          status: 'ONLINE',
+          regionCode: 'in-village',
+          deviceNum: 'anchor-001',
+          isOnline: true,
+          latitude: 35.607226,
+          longitude: 114.313807,
+        ),
+        DeviceStation(
+          id: 'station-jiang',
+          name: '卫贤姜含珠',
+          status: 'ONLINE',
+          regionCode: 'in-village',
+          deviceNum: 'jiang-001',
+          isOnline: true,
+          latitude: 35.617226,
+          longitude: 114.323807,
+        ),
+      ];
+    }
+    return const <DeviceStation>[
+      DeviceStation(
+        id: 'station-market',
+        name: '集市路口',
+        status: 'ONLINE',
+        regionCode: 'default-page',
+        deviceNum: 'market-001',
+        isOnline: true,
+        latitude: 35.627226,
+        longitude: 114.333807,
       ),
     ];
   }

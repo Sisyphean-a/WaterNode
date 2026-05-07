@@ -11,11 +11,12 @@ import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
+import 'package:waternode/features/devices/domain/repositories/device_station_cache_repository.dart';
 import 'package:waternode/features/credentials/domain/models/account_sign_in_state.dart';
 
 void main() {
   test(
-    'defaults to highest-point account and prioritizes current-village device',
+    'defaults to highest-point account and prioritizes current-village device after manual refresh',
     () async {
       final repository = MemoryAccountRepository();
       await repository.save(
@@ -46,9 +47,14 @@ void main() {
       );
       await credentialController.load();
       final gateway = _RecordingDeviceGateway();
-      final controller = DeviceController(credentialController, gateway);
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        _MemoryDeviceStationCacheRepository(),
+      );
 
       await controller.prepareWorkbench();
+      await controller.refreshStations();
 
       expect(controller.freeWaterConfig.value?.waterVolume, 7.5);
       expect(controller.stations, hasLength(2));
@@ -92,13 +98,19 @@ void main() {
       );
       await credentialController.load();
       final gateway = _RecordingDeviceGateway();
-      final controller = DeviceController(credentialController, gateway);
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        _MemoryDeviceStationCacheRepository(),
+      );
       await controller.prepareWorkbench();
+      await controller.refreshStations();
       controller.selectCredential(
         controller.availableCredentials.firstWhere(
           (item) => item.mobile == '15800000000',
         ),
       );
+      await controller.refreshStations();
       controller.selectStationById('device-2');
 
       await controller.sendCommand(quantity: 2);
@@ -133,9 +145,14 @@ void main() {
       );
       await credentialController.load();
       final gateway = _MultiStationDeviceGateway();
-      final controller = DeviceController(credentialController, gateway);
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        _MemoryDeviceStationCacheRepository(),
+      );
 
       await controller.prepareWorkbench();
+      await controller.refreshStations();
       controller.selectStationById('device-2');
       await controller.sendCommand(quantity: 1);
 
@@ -165,8 +182,13 @@ void main() {
     );
     await credentialController.load();
     final gateway = _RecordingDeviceGateway();
-    final controller = DeviceController(credentialController, gateway);
+    final controller = DeviceController(
+      credentialController,
+      gateway,
+      _MemoryDeviceStationCacheRepository(),
+    );
     await controller.prepareWorkbench();
+    await controller.refreshStations();
 
     await controller.sendCommand(quantity: 1);
 
@@ -193,7 +215,11 @@ void main() {
     );
     await credentialController.load();
     final gateway = _RecordingDeviceGateway();
-    final controller = DeviceController(credentialController, gateway);
+    final controller = DeviceController(
+      credentialController,
+      gateway,
+      _MemoryDeviceStationCacheRepository(),
+    );
     controller.selectedCredential.value =
         credentialController.credentials.single;
     controller.selectedStation.value = const DeviceStation(
@@ -251,9 +277,14 @@ void main() {
       );
       await credentialController.load();
       final gateway = _QuotaFailureDeviceGateway();
-      final controller = DeviceController(credentialController, gateway);
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        _MemoryDeviceStationCacheRepository(),
+      );
 
       await controller.prepareWorkbench();
+      await controller.refreshStations();
       await expectLater(
         () => controller.sendCommand(quantity: 1),
         throwsA(isA<StateError>()),
@@ -290,6 +321,7 @@ void main() {
       final controller = DeviceController(
         credentialController,
         _RecordingDeviceGateway(),
+        _MemoryDeviceStationCacheRepository(),
       );
 
       await expectLater(
@@ -301,7 +333,7 @@ void main() {
   );
 
   test(
-    'auto-selects first valid credential and loads stations after late account arrival',
+    'auto-selects first valid credential and auto-loads stations after late account arrival',
     () async {
       final repository = MemoryAccountRepository();
       late DeviceController controller;
@@ -313,7 +345,11 @@ void main() {
         () async => controller.syncWorkbench(),
       );
       final gateway = _RecordingDeviceGateway();
-      controller = DeviceController(credentialController, gateway);
+      controller = DeviceController(
+        credentialController,
+        gateway,
+        _MemoryDeviceStationCacheRepository(),
+      );
       addTearDown(controller.onClose);
 
       controller.onInit();
@@ -329,6 +365,238 @@ void main() {
       expect(controller.stations, isNotEmpty);
       expect(controller.lastError.value, isNull);
       expect(gateway.configCredentialMobile, '15700000000');
+      expect(gateway.stationCredentialMobiles, isNotEmpty);
+    },
+  );
+
+  test(
+    'uses cached stations on prepareWorkbench without requesting list API',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 2,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final gateway = _RecordingDeviceGateway();
+      final cacheRepository = _MemoryDeviceStationCacheRepository();
+      await cacheRepository.saveStations(
+        accountKey: 'v2:15700000000',
+        stations: const <DeviceStation>[
+          DeviceStation(
+            id: 'cached-1',
+            name: '本地缓存设备',
+            status: 'ONLINE',
+            regionCode: 'default-page',
+            deviceNum: 'device-cache',
+            isOnline: true,
+          ),
+        ],
+      );
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        cacheRepository,
+      );
+
+      await controller.prepareWorkbench();
+
+      expect(controller.stations, hasLength(1));
+      expect(controller.stations.single.name, '本地缓存设备');
+      expect(gateway.stationCredentialMobiles, isEmpty);
+    },
+  );
+
+  test(
+    'fetches remote stations on prepareWorkbench when local cache is empty',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 2,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final gateway = _RecordingDeviceGateway();
+      final cacheRepository = _MemoryDeviceStationCacheRepository();
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        cacheRepository,
+      );
+
+      await controller.prepareWorkbench();
+
+      expect(controller.stations, hasLength(2));
+      expect(gateway.stationCredentialMobiles, isNotEmpty);
+      final cached = await cacheRepository.readStations(
+        accountKey: 'v2:15700000000',
+      );
+      expect(cached, hasLength(2));
+    },
+  );
+
+  test(
+    'manual refresh fetches remote stations and overwrites local cache',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 2,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final gateway = _RecordingDeviceGateway();
+      final cacheRepository = _MemoryDeviceStationCacheRepository();
+      await cacheRepository.saveStations(
+        accountKey: 'v2:15700000000',
+        stations: const <DeviceStation>[
+          DeviceStation(
+            id: 'cached-1',
+            name: '旧缓存设备',
+            status: 'ONLINE',
+            regionCode: 'default-page',
+            deviceNum: 'device-cache',
+            isOnline: true,
+          ),
+        ],
+      );
+      final controller = DeviceController(
+        credentialController,
+        gateway,
+        cacheRepository,
+      );
+
+      await controller.prepareWorkbench();
+      await controller.refreshStations();
+
+      expect(gateway.stationCredentialMobiles, isNotEmpty);
+      expect(controller.stations.any((item) => item.name == '旧缓存设备'), isFalse);
+      final cached = await cacheRepository.readStations(
+        accountKey: 'v2:15700000000',
+      );
+      expect(cached.any((item) => item.name == '卫贤姜含珠'), isTrue);
+    },
+  );
+
+  test('filters local stations by deviceName without remote request', () async {
+    final repository = MemoryAccountRepository();
+    await repository.save(
+      const AccountCredential(
+        mobile: '15700000000',
+        token: 'token-query',
+        platformType: 'CUSTOMER_APP',
+        deviceId: 'device-query',
+        userId: 'user-query',
+        points: 2,
+        isValid: true,
+      ),
+    );
+    final credentialController = CredentialController(
+      repository,
+      _IdleActivityGateway(),
+    );
+    await credentialController.load();
+    final gateway = _RecordingDeviceGateway();
+    final cacheRepository = _MemoryDeviceStationCacheRepository();
+    await cacheRepository.saveStations(
+      accountKey: 'v2:15700000000',
+      stations: const <DeviceStation>[
+        DeviceStation(
+          id: 'cached-1',
+          name: '乡政府后院',
+          status: 'ONLINE',
+          regionCode: 'default-page',
+          deviceNum: 'device-cache-1',
+          isOnline: true,
+        ),
+        DeviceStation(
+          id: 'cached-2',
+          name: '卫贤姜含珠',
+          status: 'ONLINE',
+          regionCode: 'in-village',
+          deviceNum: 'device-cache-2',
+          isOnline: true,
+        ),
+      ],
+    );
+    final controller = DeviceController(
+      credentialController,
+      gateway,
+      cacheRepository,
+    );
+
+    await controller.prepareWorkbench();
+    controller.updateSearchQuery('姜含');
+
+    expect(controller.stations, hasLength(1));
+    expect(controller.stations.single.name, '卫贤姜含珠');
+    expect(gateway.stationCredentialMobiles, isEmpty);
+  });
+
+  test(
+    'sorts merged stations by distance from first in-village coordinate',
+    () async {
+      final repository = MemoryAccountRepository();
+      await repository.save(
+        const AccountCredential(
+          mobile: '15700000000',
+          token: 'token-query',
+          platformType: 'CUSTOMER_APP',
+          deviceId: 'device-query',
+          userId: 'user-query',
+          points: 2,
+          isValid: true,
+        ),
+      );
+      final credentialController = CredentialController(
+        repository,
+        _IdleActivityGateway(),
+      );
+      await credentialController.load();
+      final controller = DeviceController(
+        credentialController,
+        _DistanceSortedDeviceGateway(),
+        _MemoryDeviceStationCacheRepository(),
+      );
+
+      await controller.prepareWorkbench();
+
+      expect(
+        controller.stations.map((item) => item.name).toList(growable: false),
+        const <String>['默认地点', 'B-near', 'A-far'],
+      );
     },
   );
 }
@@ -591,6 +859,70 @@ class _MultiStationDeviceGateway extends _RecordingDeviceGateway {
         isOnline: true,
         dispenserType: 'ALL_FREE',
         dispenserTypeDesc: '全部免费',
+      ),
+    ];
+  }
+}
+
+class _MemoryDeviceStationCacheRepository
+    implements DeviceStationCacheRepository {
+  final Map<String, List<DeviceStation>> _storage =
+      <String, List<DeviceStation>>{};
+
+  @override
+  Future<List<DeviceStation>> readStations({required String accountKey}) async {
+    return _storage[accountKey] ?? const <DeviceStation>[];
+  }
+
+  @override
+  Future<void> saveStations({
+    required String accountKey,
+    required List<DeviceStation> stations,
+  }) async {
+    _storage[accountKey] = List<DeviceStation>.unmodifiable(stations);
+  }
+}
+
+class _DistanceSortedDeviceGateway extends _RecordingDeviceGateway {
+  @override
+  Future<List<DeviceStation>> getWaterStations({
+    required String regionCode,
+    required AccountCredential credential,
+  }) async {
+    if (regionCode == 'in-village') {
+      return const <DeviceStation>[
+        DeviceStation(
+          id: 'anchor-device',
+          name: '默认地点',
+          status: 'ONLINE',
+          regionCode: 'in-village',
+          deviceNum: 'anchor-1',
+          isOnline: true,
+          latitude: 33.596111,
+          longitude: 114.957553,
+        ),
+      ];
+    }
+    return const <DeviceStation>[
+      DeviceStation(
+        id: 'far-device',
+        name: 'A-far',
+        status: 'ONLINE',
+        regionCode: 'default-page',
+        deviceNum: 'far-1',
+        isOnline: true,
+        latitude: 34.596111,
+        longitude: 115.957553,
+      ),
+      DeviceStation(
+        id: 'near-device',
+        name: 'B-near',
+        status: 'ONLINE',
+        regionCode: 'default-page',
+        deviceNum: 'near-1',
+        isOnline: true,
+        latitude: 33.606111,
+        longitude: 114.967553,
       ),
     ];
   }

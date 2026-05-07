@@ -39,10 +39,22 @@ class DeviceStationPage extends GetView<DeviceController> {
                     onChanged: controller.selectSource,
                   ),
                 ),
+                SizedBox(
+                  width: 260,
+                  child: TextFormField(
+                    initialValue: controller.searchQuery.value,
+                    decoration: const InputDecoration(
+                      labelText: '搜索设备名',
+                      hintText: '按 deviceName 搜索',
+                      prefixIcon: Icon(Icons.search_rounded),
+                    ),
+                    onChanged: controller.updateSearchQuery,
+                  ),
+                ),
                 FilledButton.tonalIcon(
                   onPressed: controller.isLoading.value
                       ? null
-                      : () => controller.loadStations(),
+                      : () => controller.refreshStations(),
                   icon: const Icon(Icons.refresh_rounded),
                   label: const Text('刷新设备'),
                 ),

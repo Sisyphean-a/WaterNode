@@ -20,6 +20,7 @@ class AppBinding extends Bindings {
     Get.put(_dependencies.authGateway, permanent: true);
     Get.put(_dependencies.activityGateway, permanent: true);
     Get.put(_dependencies.deviceGateway, permanent: true);
+    Get.put(_dependencies.deviceStationCacheRepository, permanent: true);
     Get.put(_dependencies.tokenPayloadParser, permanent: true);
 
     Get.put(
@@ -64,6 +65,7 @@ class AppBinding extends Bindings {
       DeviceController(
         Get.find<CredentialController>(),
         _dependencies.deviceGateway,
+        _dependencies.deviceStationCacheRepository,
       ),
       permanent: true,
     );

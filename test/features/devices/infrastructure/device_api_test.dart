@@ -82,8 +82,89 @@ void main() {
     expect(stations, hasLength(1));
     expect(stations.single.deviceNum, '864708065296769');
     expect(client.lastGetPath, '/marketing/app/waterDispenser/list/inVillage');
-    expect(client.lastHeaders?['page-size'], '10');
+    expect(client.lastHeaders?['page-size'], '100');
     expect(client.lastHeaders?['page-num'], '0');
+  });
+
+  test('loads all paged stations from default-page endpoint', () async {
+    client.responseQueueForGet['/marketing/app/waterDispenser/listPage'] =
+        <Map<String, dynamic>>[
+          <String, dynamic>{
+            'code': '200',
+            'data': <String, dynamic>{
+              'last': false,
+              'totalPages': 3,
+              'content': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'device-1',
+                  'deviceNum': '861658067185069',
+                  'deviceName': '冯塘乡于刘寨村',
+                  'address': '村委会门口',
+                  'dispenserIsnOline': true,
+                  'latitude': '33.599386',
+                  'longitude': '114.982462',
+                },
+              ],
+            },
+          },
+          <String, dynamic>{
+            'code': '200',
+            'data': <String, dynamic>{
+              'last': false,
+              'totalPages': 3,
+              'content': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'device-2',
+                  'deviceNum': '861658067185070',
+                  'deviceName': '乡政府后院',
+                  'address': '卫贤乡政府',
+                  'dispenserIsnOline': true,
+                  'latitude': '35.607226',
+                  'longitude': '114.313807',
+                },
+              ],
+            },
+          },
+          <String, dynamic>{
+            'code': '200',
+            'data': <String, dynamic>{
+              'last': true,
+              'totalPages': 3,
+              'content': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'device-3',
+                  'deviceNum': '861658067185071',
+                  'deviceName': '卫贤姜含珠',
+                  'address': '卫贤镇姜含珠',
+                  'dispenserIsnOline': true,
+                  'latitude': '35.617226',
+                  'longitude': '114.323807',
+                },
+              ],
+            },
+          },
+        ];
+
+    final stations = await api.getWaterStations(
+      regionCode: 'default-page',
+      credential: credential,
+    );
+
+    expect(stations, hasLength(3));
+    expect(
+      stations.map((item) => item.name).toList(growable: false),
+      const <String>['冯塘乡于刘寨村', '乡政府后院', '卫贤姜含珠'],
+    );
+    expect(
+      client.headersHistory
+          .map((item) => item['page-num'])
+          .toList(growable: false),
+      const <String>['0', '1', '2'],
+    );
+    expect(
+      client.headersHistory.map((item) => item['page-size']).toSet(),
+      <String>{'100'},
+    );
   });
 
   test('loads device detail by device id', () async {
@@ -144,9 +225,12 @@ class _RecordingApiClient extends ApiClient {
 
   final Map<String, Map<String, dynamic>> responseForGet =
       <String, Map<String, dynamic>>{};
+  final Map<String, List<Map<String, dynamic>>> responseQueueForGet =
+      <String, List<Map<String, dynamic>>>{};
   String? lastGetPath;
   Map<String, String>? lastHeaders;
   Map<String, dynamic>? lastQueryParameters;
+  final List<Map<String, String>> headersHistory = <Map<String, String>>[];
 
   @override
   Future<Map<String, dynamic>> get(
@@ -157,6 +241,13 @@ class _RecordingApiClient extends ApiClient {
     lastGetPath = path;
     lastHeaders = headers;
     lastQueryParameters = queryParameters;
+    if (headers != null) {
+      headersHistory.add(Map<String, String>.from(headers));
+    }
+    final queuedResponses = responseQueueForGet[path];
+    if (queuedResponses != null && queuedResponses.isNotEmpty) {
+      return queuedResponses.removeAt(0);
+    }
     return responseForGet[path] ?? <String, dynamic>{'code': '200'};
   }
 }

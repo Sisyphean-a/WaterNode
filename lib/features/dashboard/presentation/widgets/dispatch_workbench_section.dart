@@ -257,51 +257,13 @@ class DispatchWorkbenchSection extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
-        final theme = Theme.of(context);
-        return _BottomSheetContent(
-          title: '切换取水终端',
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: stations.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final st = stations[index];
-              return ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.ev_station,
-                    color: theme.colorScheme.onSecondaryContainer,
-                  ),
-                ),
-                title: Text(
-                  st.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  st.address ?? '暂无地址信息',
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                tileColor: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
-                ),
-                onTap: () {
-                  deviceController.selectStationById(st.id);
-                  Navigator.of(context).pop();
-                },
-              );
-            },
-          ),
-        );
-      },
+      builder: (context) => _StationSelectorSheet(
+        stations: stations,
+        onSelect: (station) {
+          deviceController.selectStationById(station.id);
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
@@ -653,6 +615,168 @@ class _BottomSheetContent extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _StationSelectorSheet extends StatefulWidget {
+  const _StationSelectorSheet({required this.stations, required this.onSelect});
+
+  final List<DeviceStation> stations;
+  final ValueChanged<DeviceStation> onSelect;
+
+  @override
+  State<_StationSelectorSheet> createState() => _StationSelectorSheetState();
+}
+
+class _StationSelectorSheetState extends State<_StationSelectorSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  var _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final filteredStations = _filterStations(widget.stations, _query);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: theme.dividerColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '切换取水终端',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: '搜索设备名',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: filteredStations.isEmpty
+                    ? Center(
+                        child: Text(
+                          '没有匹配的设备',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        itemCount: filteredStations.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final station = filteredStations[index];
+                          return _StationSelectorTile(
+                            station: station,
+                            onTap: () => widget.onSelect(station),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<DeviceStation> _filterStations(
+    List<DeviceStation> stations,
+    String query,
+  ) {
+    final keyword = query.trim().toLowerCase();
+    if (keyword.isEmpty) {
+      return stations;
+    }
+    return stations
+        .where((station) => station.name.toLowerCase().contains(keyword))
+        .toList(growable: false);
+  }
+}
+
+class _StationSelectorTile extends StatelessWidget {
+  const _StationSelectorTile({required this.station, required this.onTap});
+
+  final DeviceStation station;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondaryContainer,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.ev_station,
+          color: theme.colorScheme.onSecondaryContainer,
+        ),
+      ),
+      title: Text(
+        station.name,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        station.address ?? '暂无地址信息',
+        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      tileColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.3,
+      ),
+      onTap: onTap,
     );
   }
 }

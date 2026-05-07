@@ -17,7 +17,10 @@ import 'package:waternode/features/dashboard/domain/models/account_bill.dart';
 import 'package:waternode/features/dashboard/domain/models/account_status.dart';
 import 'package:waternode/features/dashboard/infrastructure/activity_api.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
+import 'package:waternode/features/devices/domain/repositories/device_station_cache_repository.dart';
 import 'package:waternode/features/devices/infrastructure/device_api.dart';
+import 'package:waternode/features/devices/infrastructure/hive_device_station_cache_repository.dart';
+import 'package:waternode/features/devices/infrastructure/memory_device_station_cache_repository.dart';
 import 'package:waternode/features/devices/infrastructure/memory_device_gateway.dart';
 
 class AppDependencies {
@@ -27,6 +30,7 @@ class AppDependencies {
     required this.authGateway,
     required this.activityGateway,
     required this.deviceGateway,
+    required this.deviceStationCacheRepository,
     required this.tokenPayloadParser,
   });
 
@@ -35,11 +39,17 @@ class AppDependencies {
   final AuthGateway authGateway;
   final ActivityGateway activityGateway;
   final DeviceGateway deviceGateway;
+  final DeviceStationCacheRepository deviceStationCacheRepository;
   final TokenPayloadParser tokenPayloadParser;
 
   static Future<AppDependencies> createDefault() async {
     await Hive.initFlutter();
-    final box = await Hive.openBox<dynamic>(HiveAccountRepository.boxName);
+    final accountBox = await Hive.openBox<dynamic>(
+      HiveAccountRepository.boxName,
+    );
+    final stationCacheBox = await Hive.openBox<dynamic>(
+      HiveDeviceStationCacheRepository.boxName,
+    );
     final parser = TokenPayloadParser();
     final headers = DynamicHeaderFactory(parser);
     final dio = Dio(
@@ -52,11 +62,14 @@ class AppDependencies {
     final client = ApiClient(dio);
 
     return AppDependencies(
-      accountRepository: HiveAccountRepository(box),
+      accountRepository: HiveAccountRepository(accountBox),
       accountProfileGateway: AccountProfileApi(client, headers),
       authGateway: AuthApi(client, headers),
       activityGateway: ActivityApi(client, headers),
       deviceGateway: DeviceApi(client, headers),
+      deviceStationCacheRepository: HiveDeviceStationCacheRepository(
+        stationCacheBox,
+      ),
       tokenPayloadParser: parser,
     );
   }
@@ -80,6 +93,7 @@ class AppDependencies {
       authGateway: const _StubAuthGateway(),
       activityGateway: const _StubActivityGateway(),
       deviceGateway: const MemoryDeviceGateway(),
+      deviceStationCacheRepository: MemoryDeviceStationCacheRepository(),
       tokenPayloadParser: parser,
     );
   }

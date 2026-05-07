@@ -11,8 +11,7 @@ import 'package:waternode/features/devices/domain/models/free_water_config.dart'
 class DeviceApi implements DeviceGateway {
   DeviceApi(this._client, this._headerFactory);
 
-  static const _defaultPageSize = '10';
-  static const _defaultPageNum = '0';
+  static const _defaultPageSize = '100';
 
   final ApiClient _client;
   final DynamicHeaderFactory _headerFactory;
@@ -76,11 +75,46 @@ class DeviceApi implements DeviceGateway {
     required String regionCode,
     required AccountCredential credential,
   }) async {
-    final response = await _client.get(
-      _resolveStationPath(regionCode),
-      headers: _buildStationHeaders(credential),
-    );
-    final data = ApiResponse.readDataMap(response, action: 'listWaterStations');
+    final path = _resolveStationPath(regionCode);
+    final stations = <DeviceStation>[];
+    var pageNum = 0;
+    var hasNextPage = true;
+
+    while (hasNextPage) {
+      final response = await _client.get(
+        path,
+        headers: _buildStationHeaders(credential, pageNum: pageNum),
+      );
+      final data = ApiResponse.readDataMap(
+        response,
+        action: 'listWaterStations',
+      );
+      stations.addAll(_mapStations(data, regionCode: regionCode));
+      hasNextPage = _hasNextPage(data, currentPageNum: pageNum);
+      pageNum++;
+    }
+    return List<DeviceStation>.unmodifiable(stations);
+  }
+
+  Map<String, String> _buildAuthorizedHeaders(AccountCredential credential) {
+    return _headerFactory.buildAuthorizedHeaders(token: credential.token);
+  }
+
+  Map<String, String> _buildStationHeaders(
+    AccountCredential credential, {
+    required int pageNum,
+  }) {
+    return <String, String>{
+      ..._buildAuthorizedHeaders(credential),
+      'page-size': _defaultPageSize,
+      'page-num': '$pageNum',
+    };
+  }
+
+  List<DeviceStation> _mapStations(
+    Map<String, dynamic> data, {
+    required String regionCode,
+  }) {
     final content = data['content'];
     if (content is! List) {
       throw const AppException('设备列表响应缺少 content 数组');
@@ -90,18 +124,6 @@ class DeviceApi implements DeviceGateway {
         .whereType<Map<String, dynamic>>()
         .map((item) => _mapStation(item, regionCode: regionCode))
         .toList(growable: false);
-  }
-
-  Map<String, String> _buildAuthorizedHeaders(AccountCredential credential) {
-    return _headerFactory.buildAuthorizedHeaders(token: credential.token);
-  }
-
-  Map<String, String> _buildStationHeaders(AccountCredential credential) {
-    return <String, String>{
-      ..._buildAuthorizedHeaders(credential),
-      'page-size': _defaultPageSize,
-      'page-num': _defaultPageNum,
-    };
   }
 
   DeviceStation _mapStation(
@@ -144,6 +166,18 @@ class DeviceApi implements DeviceGateway {
     }
   }
 
+  bool _hasNextPage(Map<String, dynamic> data, {required int currentPageNum}) {
+    final last = data['last'];
+    if (last is bool) {
+      return !last;
+    }
+    final totalPages = _readOptionalInt(data['totalPages']);
+    if (totalPages != null) {
+      return currentPageNum + 1 < totalPages;
+    }
+    return false;
+  }
+
   bool _readRequiredBool(Map<String, dynamic> data, String key) {
     final value = data[key];
     if (value is bool) {
@@ -169,6 +203,16 @@ class DeviceApi implements DeviceGateway {
       return int.parse(value);
     }
     throw AppException('$key 不是整数');
+  }
+
+  int? _readOptionalInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is String && value.isNotEmpty) {
+      return int.parse(value);
+    }
+    return null;
   }
 
   String _readRequiredString(Map<String, dynamic> data, String key) {

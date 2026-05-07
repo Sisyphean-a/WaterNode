@@ -15,6 +15,7 @@ import 'package:waternode/features/devices/application/device_controller.dart';
 import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
+import 'package:waternode/features/devices/infrastructure/memory_device_station_cache_repository.dart';
 
 void main() {
   tearDown(Get.reset);
@@ -47,6 +48,7 @@ void main() {
     final deviceController = DeviceController(
       credentialController,
       _TaskCenterDeviceGateway(),
+      MemoryDeviceStationCacheRepository(),
     );
     deviceController.logs.assignAll(<TaskLogEntry>[
       TaskLogEntry(

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:get/get.dart';
 import 'package:waternode/features/credentials/application/credential_controller.dart';
 import 'package:waternode/features/credentials/domain/models/account_credential.dart';
@@ -6,12 +8,18 @@ import 'package:waternode/features/devices/domain/gateways/device_gateway.dart';
 import 'package:waternode/features/devices/domain/models/device_station.dart';
 import 'package:waternode/features/devices/domain/models/free_water_config.dart';
 import 'package:waternode/features/devices/domain/models/region_option.dart';
+import 'package:waternode/features/devices/domain/repositories/device_station_cache_repository.dart';
 
 class DeviceController extends GetxController {
-  DeviceController(this._credentialController, this._deviceGateway);
+  DeviceController(
+    this._credentialController,
+    this._deviceGateway,
+    this._stationCacheRepository,
+  );
 
   final CredentialController _credentialController;
   final DeviceGateway _deviceGateway;
+  final DeviceStationCacheRepository _stationCacheRepository;
 
   final sources = <RegionOption>[
     const RegionOption(code: 'in-village', name: '当前村设备'),
@@ -27,6 +35,12 @@ class DeviceController extends GetxController {
   final isLoading = false.obs;
   final dispatchingStationId = RxnString();
   final lastError = RxnString();
+  final searchQuery = ''.obs;
+
+  static const double _earthRadiusKm = 6371;
+  static const String _stationCacheVersion = 'v2';
+
+  List<DeviceStation> _allStations = const <DeviceStation>[];
 
   @override
   void onInit() {
@@ -40,6 +54,11 @@ class DeviceController extends GetxController {
     }
     selectedSource.value = source;
     loadStations().catchError((_) {});
+  }
+
+  void updateSearchQuery(String value) {
+    searchQuery.value = value;
+    _applyVisibleStations();
   }
 
   List<AccountCredential> get availableCredentials {
@@ -89,37 +108,34 @@ class DeviceController extends GetxController {
   }
 
   Future<void> loadStations() async {
+    await _loadStations(forceRefresh: false);
+  }
+
+  Future<void> refreshStations() async {
+    await _loadStations(forceRefresh: true);
+  }
+
+  Future<void> _loadStations({required bool forceRefresh}) async {
     if (sources.isEmpty) {
-      stations.clear();
-      selectedStation.value = null;
-      freeWaterConfig.value = null;
+      _clearStationsState();
       return;
     }
 
     isLoading.value = true;
     lastError.value = null;
     try {
-      await _credentialController.refreshStatuses();
-      final credential = _resolveQueryCredential();
-      selectedCredential.value = credential;
-      final config = await _deviceGateway.getFreeWaterConfig(credential);
-      if (!config.isOn) {
-        throw StateError('免费接水活动未开启');
-      }
-      final preferredSource = selectedSource.value ?? sources.first;
-      selectedSource.value = preferredSource;
-      final loadedStations = await _loadAllStations(
-        credential,
-        preferredSourceCode: preferredSource.code,
+      final context = await _loadStationsContext();
+      final loadedStations = await _resolveStations(
+        context.credential,
+        preferredSourceCode: context.preferredSource.code,
+        forceRefresh: forceRefresh,
       );
-      freeWaterConfig.value = config;
-      stations.assignAll(loadedStations);
-      _restoreSelectedStation();
+      freeWaterConfig.value = context.config;
+      _allStations = loadedStations;
+      _applyVisibleStations();
     } catch (error) {
       lastError.value = error.toString();
-      stations.clear();
-      selectedStation.value = null;
-      freeWaterConfig.value = null;
+      _clearStationsState();
       rethrow;
     } finally {
       isLoading.value = false;
@@ -288,6 +304,87 @@ class DeviceController extends GetxController {
         _defaultStation(preferredRegionCode: selectedSource.value?.code);
   }
 
+  void _applyVisibleStations() {
+    final filteredStations = _filterStations(_allStations);
+    stations.assignAll(filteredStations);
+    _restoreSelectedStation();
+  }
+
+  List<DeviceStation> _filterStations(List<DeviceStation> source) {
+    final keyword = searchQuery.value.trim().toLowerCase();
+    if (keyword.isEmpty) {
+      return source;
+    }
+    return source
+        .where((station) => station.name.toLowerCase().contains(keyword))
+        .toList(growable: false);
+  }
+
+  void _clearStationsState() {
+    _allStations = const <DeviceStation>[];
+    stations.clear();
+    selectedStation.value = null;
+    freeWaterConfig.value = null;
+  }
+
+  Future<_StationLoadContext> _loadStationsContext() async {
+    await _credentialController.refreshStatuses();
+    final credential = _resolveQueryCredential();
+    selectedCredential.value = credential;
+    final config = await _deviceGateway.getFreeWaterConfig(credential);
+    if (!config.isOn) {
+      throw StateError('免费接水活动未开启');
+    }
+    final preferredSource = selectedSource.value ?? sources.first;
+    selectedSource.value = preferredSource;
+    return _StationLoadContext(
+      credential: credential,
+      config: config,
+      preferredSource: preferredSource,
+    );
+  }
+
+  Future<List<DeviceStation>> _resolveStations(
+    AccountCredential credential, {
+    required String preferredSourceCode,
+    required bool forceRefresh,
+  }) async {
+    if (forceRefresh) {
+      final loadedStations = await _loadAllStations(
+        credential,
+        preferredSourceCode: preferredSourceCode,
+      );
+      await _stationCacheRepository.saveStations(
+        accountKey: _buildCacheKey(credential),
+        stations: loadedStations,
+      );
+      return loadedStations;
+    }
+    final cachedStations = await _stationCacheRepository.readStations(
+      accountKey: _buildCacheKey(credential),
+    );
+    if (cachedStations.isEmpty) {
+      final loadedStations = await _loadAllStations(
+        credential,
+        preferredSourceCode: preferredSourceCode,
+      );
+      await _stationCacheRepository.saveStations(
+        accountKey: _buildCacheKey(credential),
+        stations: loadedStations,
+      );
+      return loadedStations;
+    }
+    return _sortStations(
+      cachedStations,
+      preferredSourceCode: preferredSourceCode,
+      anchor: _resolveAnchor(cachedStations),
+    );
+  }
+
+  String _buildCacheKey(AccountCredential credential) {
+    return '$_stationCacheVersion:${credential.mobile}';
+  }
+
   DeviceStation? _defaultStation({String? preferredRegionCode}) {
     final preferredOnline = stations.firstWhereOrNull(
       (item) => item.regionCode == preferredRegionCode && item.isOnline,
@@ -310,21 +407,36 @@ class DeviceController extends GetxController {
     required String preferredSourceCode,
   }) async {
     final mergedStations = <String, DeviceStation>{};
+    DeviceStation? anchor;
     for (final source in sources) {
       final sourceStations = await _deviceGateway.getWaterStations(
         regionCode: source.code,
         credential: credential,
       );
+      anchor ??= _resolveAnchor(sourceStations);
       for (final station in sourceStations) {
         mergedStations.putIfAbsent(station.id, () => station);
       }
     }
-    final stationsList = mergedStations.values.toList(growable: false);
+    return _sortStations(
+      mergedStations.values,
+      preferredSourceCode: preferredSourceCode,
+      anchor: anchor,
+    );
+  }
+
+  List<DeviceStation> _sortStations(
+    Iterable<DeviceStation> source, {
+    required String preferredSourceCode,
+    DeviceStation? anchor,
+  }) {
+    final stationsList = source.toList(growable: false);
     stationsList.sort(
       (left, right) => _compareStations(
         left,
         right,
         preferredSourceCode: preferredSourceCode,
+        anchor: anchor,
       ),
     );
     return stationsList;
@@ -334,7 +446,20 @@ class DeviceController extends GetxController {
     DeviceStation left,
     DeviceStation right, {
     required String preferredSourceCode,
+    DeviceStation? anchor,
   }) {
+    final leftDistance = _distanceFromAnchor(left, anchor);
+    final rightDistance = _distanceFromAnchor(right, anchor);
+    if (leftDistance != null && rightDistance != null) {
+      final distanceCompare = leftDistance.compareTo(rightDistance);
+      if (distanceCompare != 0) {
+        return distanceCompare;
+      }
+    } else if (leftDistance != null) {
+      return -1;
+    } else if (rightDistance != null) {
+      return 1;
+    }
     final leftPriority = _stationPriority(
       left,
       preferredSourceCode: preferredSourceCode,
@@ -364,4 +489,73 @@ class DeviceController extends GetxController {
     }
     return 3;
   }
+
+  DeviceStation? _resolveAnchor(Iterable<DeviceStation> stations) {
+    for (final station in stations) {
+      if (station.regionCode != 'in-village') {
+        continue;
+      }
+      if (station.latitude != null && station.longitude != null) {
+        return station;
+      }
+    }
+    return null;
+  }
+
+  double? _distanceFromAnchor(DeviceStation station, DeviceStation? anchor) {
+    final anchorLatitude = anchor?.latitude;
+    final anchorLongitude = anchor?.longitude;
+    final latitude = station.latitude;
+    final longitude = station.longitude;
+    if (anchorLatitude == null ||
+        anchorLongitude == null ||
+        latitude == null ||
+        longitude == null) {
+      return null;
+    }
+    return _haversineDistanceKm(
+      startLatitude: anchorLatitude,
+      startLongitude: anchorLongitude,
+      endLatitude: latitude,
+      endLongitude: longitude,
+    );
+  }
+
+  double _haversineDistanceKm({
+    required double startLatitude,
+    required double startLongitude,
+    required double endLatitude,
+    required double endLongitude,
+  }) {
+    final latitudeDelta = _toRadians(endLatitude - startLatitude);
+    final longitudeDelta = _toRadians(endLongitude - startLongitude);
+    final startLatitudeRadians = _toRadians(startLatitude);
+    final endLatitudeRadians = _toRadians(endLatitude);
+    final haversine =
+        _squareOfSine(latitudeDelta / 2) +
+        _squareOfSine(longitudeDelta / 2) *
+            cos(startLatitudeRadians) *
+            cos(endLatitudeRadians);
+    final arc = 2 * atan2(sqrt(haversine), sqrt(1 - haversine));
+    return _earthRadiusKm * arc;
+  }
+
+  double _toRadians(double degrees) => degrees * pi / 180;
+
+  double _squareOfSine(double value) {
+    final sine = sin(value);
+    return sine * sine;
+  }
+}
+
+class _StationLoadContext {
+  const _StationLoadContext({
+    required this.credential,
+    required this.config,
+    required this.preferredSource,
+  });
+
+  final AccountCredential credential;
+  final FreeWaterConfig config;
+  final RegionOption preferredSource;
 }
